@@ -25,7 +25,7 @@
 #include <dynamics_model.h>
 
 #include <controller.h>
-#include <controller_2.h>
+
 #include "sriCommDefine.h"
 #include "sriCommManager.h"
 #include "KalmanFilter.h"
@@ -88,7 +88,7 @@ bool example_angular_action_movement_exp(k_api::Base::BaseClient* base)
 
     auto actuator_count = base->GetActuatorCount();
 
-    float exp_start_angle[] = {307., 90., 90., 122, 0., 0., 0.};
+    float exp_start_angle[] = {25., 90., 90., 122, 0., 0., 0.};
 
     // Arm straight up
     for (size_t i = 0; i < actuator_count.count(); ++i) 
@@ -331,7 +331,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         cout << "open force sensor to get continuesly force data" << endl;
         cout << "##################################\n" << endl;
         sleep(2);
-        Eigen::Vector2d f_init;
+        double f_init;
         Eigen::Vector3d eulerAngel;
 
         // Set the base in low-level servoing mode
@@ -366,7 +366,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         eulerAngel[1] = base_feedback.base().tool_pose_theta_y() / 180. * M_PI;
         eulerAngel[2] = base_feedback.base().tool_pose_theta_z() / 180. * M_PI;
 
-        f_init = commManager.getBaseForce(eulerAngel);
+        f_init = commManager.getJointForce();
 
         cout << "##################################" << endl;
         cout << "get init force" << endl;
@@ -386,7 +386,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         vector<double> q(7);
        
         // Real-time loop
-        while (timer_count < (15000))
+        while (timer_count < (2500))
         {
             now = GetTickUs();
             
@@ -416,9 +416,9 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 eulerAngel[1] = base_feedback.base().tool_pose_theta_y() / 180. * M_PI;
                 eulerAngel[2] = base_feedback.base().tool_pose_theta_z() / 180. * M_PI;
 
-                f_input = commManager.getJointForce();
+                f_input = commManager.getJointForce() - f_init;
 
-                cout << "f_input: " << f_input << endl;
+                // cout << "f_input: " << f_input << endl;
 
                 begin_tau = GetTickUs();
                 tau = control.get_tau(T, f_input, q_input);
@@ -474,27 +474,21 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 aver_tau_time = aver_tau_time + (end_tau - begin_tau) / 15000.;
                 aver_update_time = aver_update_time + (end_update - begin_update) / 15000.;
 
-                cout << "aver_tau_time: " << aver_tau_time << " us" <<endl;
-                cout << "aver_update_time: " << aver_update_time << " us" <<endl;
-                cout << "aver_objective_time: " << aver_tau_time + aver_update_time << " us" <<endl;
+                // cout << "aver_tau_time: " << aver_tau_time << " us" <<endl;
+                // cout << "aver_update_time: " << aver_update_time << " us" <<endl;
+                // cout << "aver_objective_time: " << aver_tau_time + aver_update_time << " us" <<endl;
         
             }
         }
         
         sleep(1);
+        control.plot_q();
+        control.plot_tao();
+        control.plot_q_hat();
         cout << "##################################" << endl;
         cout << "plot data" << endl;
         cout << "##################################\n" << endl;
 
-        // control.plotJointTorque();
-        // control.plotJointAngles();
-        // control.plotCartesianPosition();
-        // control.plotExternalForce();
-        // control.plotExternalJointForce();
-        // control.plot_u_x_star();
-        // control.plot_q_x_star();
-        // control.plot_q_star();
-        // control.saveData();
     
         std::cout << "Torque control example completed" << std::endl;
 // 

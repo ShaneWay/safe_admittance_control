@@ -141,7 +141,7 @@ bool example_angular_action_movement(k_api::Base::BaseClient* base)
 
     auto actuator_count = base->GetActuatorCount();
 
-    float exp_start_angle[] = {307., 90., 90., 122., 0., 0., 0.};
+    float exp_start_angle[] = {25., 90., 90., 122., 0., 0., 0.};
 
     // Arm straight up
     for (size_t i = 0; i < actuator_count.count(); ++i) 

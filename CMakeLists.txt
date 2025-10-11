@@ -73,7 +73,7 @@ foreach ( SRC_FILE ${EXE_LIST} )
   ./include/kortex/utilities/utilities.cpp 
   ./dynamics_model/dynamics_model.cpp 
   ./kinematics_model/kinematics_model.cpp 
-  ./controller/controller_2.cpp 
+  # ./controller/controller_2.cpp 
   ./controller/controller.cpp 
   ./force_sensor/sriCommATParser.cpp
   ./force_sensor/sriCommATParser.h

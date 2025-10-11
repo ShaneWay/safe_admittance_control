@@ -7,20 +7,22 @@
 
 using namespace std;
 
-#define TimeUnit 0.001
+#define TimeUnit 0.002
 
-constexpr double M_x = 0.5;
-constexpr double B_x = 1.;
+constexpr double M_x = 2;
+constexpr double B_x = 2;
 
-constexpr double K = 5000.;
+constexpr double K = 500.;
 constexpr double B = 30.;
-constexpr double L = 0.5;
+constexpr double L = 30;
 
-constexpr double M = 0.3;
+constexpr double M = 0.5;
 
-constexpr double init_angle = 120. / 180. * M_PI;
+constexpr double init_angle = 122. / 180. * M_PI;
 
-constexpr double F_max = 15.;
+constexpr double F_max = 6.;
+constexpr double f_d_tem = -1.;
+constexpr double Q_max = 0.8;
 
 
 
@@ -50,14 +52,14 @@ class controller
         vector<double> f;
         vector<double> f_d;
 
+        vector<double> q_s_hat;
+
 
     public:
         controller();
         double get_tau(const double & T, double & f_ext_from_sensor, double& q_frome_sensor);
-        double get_tau_normal(const double & T, double & f_input, double& q_input);
 
         void refresh(const double & T);
-        void refresh_normal(const double & T);
 
         static double proj(double tao_star_input);
         static double proj_Q(double u_x_star);
@@ -65,9 +67,10 @@ class controller
         void plot_tao();
         void plot_tao_realtime(vector<double>& f);
         void plot_q();
-        void plot_q_realtime(vector<double>& qs);
+        void plot_q_hat();
+        // void plot_q_x_hat();
 
-        void plot_q0();
+        void plot_q_realtime(vector<double>& qs);
     
         ~controller();
 
