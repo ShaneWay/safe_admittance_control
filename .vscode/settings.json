@@ -68,6 +68,9 @@
         "typeinfo": "cpp",
         "*.ipp": "cpp",
         "dense": "cpp",
-        "*.txx": "cpp"
+        "*.txx": "cpp",
+        "bit": "cpp",
+        "shared_mutex": "cpp",
+        "variant": "cpp"
     }
 }

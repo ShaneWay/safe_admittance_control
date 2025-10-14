@@ -306,7 +306,10 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     double_t aver_update_time = 0.;
 
     KortexDynamics model;
-    controller control;
+    ConfigLoader loader("config.yaml");
+    Config cfg = loader.getConfig();
+
+    controller control(cfg);
     cout << "##################################" << endl;
     cout << "generate trajetory" << endl;
     cout << "##################################\n" << endl;
@@ -421,7 +424,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // cout << "f_input: " << f_input << endl;
 
                 begin_tau = GetTickUs();
-                tau = control.get_tau(T, f_input, q_input);
+                tau = control.getTorque(T, f_input, q_input);
                 end_tau = GetTickUs();
                 cout << "real tau: " << tau << endl;
                 cout << "==========================================!" << endl;
@@ -483,7 +486,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         
         sleep(1);
         control.plot_q();
-        control.plot_tao();
+        control.plot_tau();
         control.plot_q_hat();
         cout << "##################################" << endl;
         cout << "plot data" << endl;

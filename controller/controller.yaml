@@ -1,0 +1,21 @@
+robot:
+  init_angle: 122
+  
+controller:
+  M_x: 2
+  B_x: 2
+
+  K: 500
+  B: 30
+  L: 30
+
+  M: 0.5
+
+  F_max: 6
+  Q_max: 0.8
+
+  f_d_tem: -1
+
+  TimeUnit: 0.02
+
+  control_mode: normal

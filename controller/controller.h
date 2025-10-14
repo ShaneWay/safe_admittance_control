@@ -4,34 +4,44 @@
 #include <iostream>
 #include <vector>
 #include <Eigen/Dense>
+#include "ConfigLoader.h"
 
 using namespace std;
 
-#define TimeUnit 0.002
 
-constexpr double M_x = 2;
-constexpr double B_x = 2;
-
-constexpr double K = 500.;
-constexpr double B = 30.;
-constexpr double L = 30;
-
-constexpr double M = 0.5;
-
-constexpr double init_angle = 122. / 180. * M_PI;
-
-constexpr double F_max = 6.;
-constexpr double f_d_tem = -1.;
-constexpr double Q_max = 0.8;
-
+enum class ControlMode
+{
+    NORMAL,
+    SFC,
+    SMC
+};
 
 
 class controller
 {
     private:
+
+        double M_x;
+        double B_x;
+
+        double K;
+        double B;
+        double L;
+
+        double M;
+
+        double init_angle;
+
+        double F_max;
+        double f_d_tem;
+        double Q_max;
+        double TimeUnit;
         
-        vector<double> tao;
-        vector<double> tao_star;
+        std::string control_mode;
+
+        
+        vector<double> tau;
+        vector<double> tau_star;
 
         vector<double> u_x;
         vector<double> u_x_star;
@@ -47,6 +57,7 @@ class controller
         vector<double> q_s_star;
 
         vector<double> a;
+        vector<double> integral_a;
         int32_t frame;
 
         vector<double> f;
@@ -54,25 +65,38 @@ class controller
 
         vector<double> q_s_hat;
 
+        ControlMode mode_;
+
 
     public:
-        controller();
-        double get_tau(const double & T, double & f_ext_from_sensor, double& q_frome_sensor);
+        explicit controller(const Config& config);
 
+        double getTorque(const double & T, double & f_ext_from_sensor, double& q_frome_sensor);
+
+        double getTorqueNormal(const double & T, double & f_ext_from_sensor, double& q_frome_sensor);
+        double getTorqueSMC(const double & T, double & f_ext_from_sensor, double& q_frome_sensor);
+        double getTorqueSFC(const double & T, double & f_ext_from_sensor, double& q_frome_sensor);
+        
         void refresh(const double & T);
 
-        static double proj(double tao_star_input);
-        static double proj_Q(double u_x_star);
+        void refreshNormal(const double & T);
+        void refreshSMC(const double & T);
+        void refreshSFC(const double & T);
 
-        void plot_tao();
-        void plot_tao_realtime(vector<double>& f);
+
+        void plot_tau();
         void plot_q();
         void plot_q_hat();
         // void plot_q_x_hat();
 
-        void plot_q_realtime(vector<double>& qs);
+        virtual ~controller();
     
-        ~controller();
+    private:
+        ControlMode parseMode(const std::string& modeStr);
+        double proj(double tao_star_input);
+        double proj_Q(double u_x_star);
+
+        
 
 
 };
