@@ -83,6 +83,7 @@ class controller
         void refreshSMC(const double & T);
         void refreshSFC(const double & T);
 
+        void printParams() const;
 
         void plot_tau();
         void plot_q();
@@ -92,7 +93,7 @@ class controller
         virtual ~controller();
     
     private:
-        ControlMode parseMode(const std::string& modeStr);
+        void parseMode(const std::string& modeStr);
         double proj(double tao_star_input);
         double proj_Q(double u_x_star);
 

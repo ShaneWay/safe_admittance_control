@@ -306,10 +306,12 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     double_t aver_update_time = 0.;
 
     KortexDynamics model;
-    ConfigLoader loader("config.yaml");
+    ConfigLoader loader("../controller/controller.yaml");
     Config cfg = loader.getConfig();
 
+
     controller control(cfg);
+    control.printParams();
     cout << "##################################" << endl;
     cout << "generate trajetory" << endl;
     cout << "##################################\n" << endl;

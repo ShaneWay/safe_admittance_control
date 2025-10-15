@@ -17,6 +17,8 @@ controller::controller(const Config& config)
     Q_max = config.controller.Q_max;
     TimeUnit = config.controller.TimeUnit;
     control_mode = config.controller.control_mode;
+    // std::cout << control_mode << std::endl;
+    parseMode(control_mode);
 
     init_angle = config.robot.init_angle;
     init_angle = init_angle / 180. * M_PI;
@@ -57,12 +59,28 @@ controller::controller(const Config& config)
     }
 }
 
-ControlMode controller::parseMode(const std::string& modeStr) {
-    if (modeStr == "normal") return ControlMode::NORMAL;
-    if (modeStr == "sfc") return ControlMode::SFC;
-    if (modeStr == "smc")   return ControlMode::SMC;
+void controller::printParams() const {
+    std::cout << "====Controller Parameters====\n"
+              << "M_x: " << M_x << "\n"
+              << "B_x: " << B_x << "\n"
+              << "K: " << K << "\n"
+              << "B: " << B << "\n"
+              << "L: " << L << "\n"
+              << "M: " << M << "\n"
+              << "F_max: " << F_max << "\n"
+              << "f_d_tem: " << f_d_tem << "\n"
+              << "Q_max: " << Q_max << "\n"
+              << "control_mode <<: " << control_mode << "\n"
+              << "================================\n";
+}
 
-    throw std::invalid_argument("Unknown control mode: " + modeStr);
+void controller::parseMode(const std::string& modeStr) {
+    if (modeStr == "normal") std::cout << "1111" << std::endl ; mode_ = ControlMode::NORMAL;
+    if (modeStr == "sfc") mode_ = ControlMode::SFC;
+    if (modeStr == "smc") {
+        std::cout << "3333" << std::endl ;
+        mode_ = ControlMode::SMC;
+    }
 }
 
 double controller::getTorque(const double & T, double & f_ext_from_sensor, double & q_frome_sensor)

@@ -11,11 +11,11 @@ controller:
 
   M: 0.5
 
-  F_max: 6
+  F_max: 1
   Q_max: 0.8
 
   f_d_tem: -1
 
   TimeUnit: 0.02
 
-  control_mode: normal
+  control_mode: "smc"

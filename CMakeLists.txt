@@ -5,6 +5,7 @@ project(kortex_admittance_control  LANGUAGES CXX)
 # Activate C++ 11
 set (CMAKE_CXX_STANDARD 11)
 find_package(Eigen3)
+find_package(yaml-cpp)
 message(${CMAKE_CXX_COMPILER})
 set(CMAKE_INCLUDE_CURRENT_DIR   ON)
 set(CMAKE_COLOR_MAKEFILE        ON)
@@ -75,6 +76,7 @@ foreach ( SRC_FILE ${EXE_LIST} )
   ./kinematics_model/kinematics_model.cpp 
   # ./controller/controller_2.cpp 
   ./controller/controller.cpp 
+  ./controller/ConfigLoader.cpp
   ./force_sensor/sriCommATParser.cpp
   ./force_sensor/sriCommATParser.h
   ./force_sensor/sriCommCircularBuffer.cpp
@@ -101,6 +103,7 @@ foreach ( SRC_FILE ${EXE_LIST} )
   target_link_libraries(${TARGET_EXE_NAME} PUBLIC
   Python3::Python
   Python3::Module
+  yaml-cpp
   )
 
   if(Python3_NumPy_FOUND)
