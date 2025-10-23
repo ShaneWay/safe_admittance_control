@@ -131,7 +131,7 @@ double controller::getTorqueNormal(const double & T, double & f_ext_from_sensor,
     double q_s_star_tem = q_s[frame] + (phi_b[frame] - phi_a[frame]) / (K_hat + M / (T * T));
 
     double Mat = K_hat + M / (T * T);
-    double tau_tem = Mat * (q_x_star[frame] - q_s_star[frame]);
+    double tau_tem = Mat * (q_x[frame] - q_s_star_tem);
     tau.push_back(tau_tem);
 
     return tau[frame];
