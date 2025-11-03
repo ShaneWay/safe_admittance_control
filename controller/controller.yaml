@@ -2,8 +2,8 @@ robot:
   init_angle: 122
   
 controller:
-  M_x: 2
-  B_x: 2
+  M_x: 1
+  B_x: 1
 
   K: 500
   B: 30
@@ -11,11 +11,14 @@ controller:
 
   M: 0.5
 
-  F_max: 1
-  Q_max: 0.8
+  F_max: 7
+  Q_max: 0.3
 
-  f_d_tem: -1
+  f_d_tem: -0.3
 
-  TimeUnit: 0.02
+  TimeUnit: 0.002
+  SimTime: 3
 
-  control_mode: "smc"
+
+  control_mode: "sfc"
+  

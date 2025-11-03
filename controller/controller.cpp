@@ -16,6 +16,7 @@ controller::controller(const Config& config)
     f_d_tem = config.controller.f_d_tem;
     Q_max = config.controller.Q_max;
     TimeUnit = config.controller.TimeUnit;
+    SimTime = config.controller.SimTime;
     control_mode = config.controller.control_mode;
     // std::cout << control_mode << std::endl;
     parseMode(control_mode);
@@ -47,15 +48,11 @@ controller::controller(const Config& config)
     f_d.push_back(f_d_tem);
 
     frame = 1;
-    for(int i=0; i< 5001; i++)
+    for(int i=0; i< 10000; i++)
     {
-        if(i >1000 && i < 1500)
-        {
-            f_d.push_back(10);
-        }
-        else{
-            f_d.push_back(f_d_tem);
-        }
+        
+        f_d.push_back(f_d_tem);
+        
     }
 }
 
@@ -70,17 +67,15 @@ void controller::printParams() const {
               << "F_max: " << F_max << "\n"
               << "f_d_tem: " << f_d_tem << "\n"
               << "Q_max: " << Q_max << "\n"
+              << "SimeTime: " << SimTime << "\n"
               << "control_mode <<: " << control_mode << "\n"
               << "================================\n";
 }
 
 void controller::parseMode(const std::string& modeStr) {
-    if (modeStr == "normal") std::cout << "1111" << std::endl ; mode_ = ControlMode::NORMAL;
+    if (modeStr == "normal")  mode_ = ControlMode::NORMAL;
     if (modeStr == "sfc") mode_ = ControlMode::SFC;
-    if (modeStr == "smc") {
-        std::cout << "3333" << std::endl ;
-        mode_ = ControlMode::SMC;
-    }
+    if (modeStr == "smc") mode_ = ControlMode::SMC;
 }
 
 double controller::getTorque(const double & T, double & f_ext_from_sensor, double & q_frome_sensor)
@@ -131,8 +126,8 @@ double controller::getTorqueNormal(const double & T, double & f_ext_from_sensor,
     double q_s_star_tem = q_s[frame] + (phi_b[frame] - phi_a[frame]) / (K_hat + M / (T * T));
 
     double Mat = K_hat + M / (T * T);
-    double tau_tem = Mat * (q_x_star[frame] - q_s_star[frame]);
-    tau.push_back(tau_tem);
+    double tau_tem = Mat * (q_x[frame] - q_s_star_tem);
+    tau.push_back(proj(tau_tem));
 
     return tau[frame];
 }
@@ -145,14 +140,19 @@ double controller::getTorqueSFC(const double & T, double & f_ext_from_sensor, do
     cout << "f[frame " << frame << "] = " << f[frame] << endl;
     cout << "q[frame " << frame << "] = " << q_s[frame] << endl;
     
-    double a_tem = f[frame] - B_x * std::abs(q_x_hat[frame - 1]) * std::abs(q_x_hat[frame - 1]) * q_x_hat[frame -1] / M_x;
+    double a_tem = (f[frame] + f_d[frame - 1] - B_x * std::abs(q_x_hat[frame - 1]) * std::abs(q_x_hat[frame - 1]) * q_x_hat[frame -1]) / M_x;
     a.push_back(a_tem);
     double q_x_hat_tem = q_x_hat[frame - 1] + a[frame] * T;
     q_x_hat.push_back(q_x_hat_tem);
+
+    double q_x_tem = q_x[frame - 1] + T * q_x_hat[frame];
+    q_x.push_back(q_x_tem);
+
     double integral_a_tem = integral_a[frame - 1] + T * (q_x[frame] - q_s[frame]);
     integral_a.push_back(integral_a_tem);
-    double tau_star_tem = M * a[frame] + K * (q_x[frame] - q_s[frame]) * B * (q_x_hat[frame] - q_s_hat[frame]) + L * integral_a[frame];
+    double tau_star_tem = M * a[frame] + K * (q_x[frame] - q_s[frame]) + B * (q_x_hat[frame] - q_s_hat[frame]) + L * integral_a[frame];
     tau_star.push_back(tau_star_tem);
+    std::cout << "tau_star: " << tau_star_tem << endl;
     
     tau.push_back(proj(tau_star_tem));
 
@@ -247,10 +247,13 @@ void controller::refreshNormal(const double & T)
     double a_tem = a[frame - 1]  + T * (q_x[frame] - q_s[frame]);
     a.push_back(a_tem);
 
+    frame++;
+
 }
 
 void controller::refreshSFC(const double & T)
 {
+    frame++;
 
 }
 

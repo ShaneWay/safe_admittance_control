@@ -308,7 +308,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     KortexDynamics model;
     ConfigLoader loader("../controller/controller.yaml");
     Config cfg = loader.getConfig();
-
+    int SimCount = cfg.controller.SimTime / cfg.controller.TimeUnit;
 
     controller control(cfg);
     control.printParams();
@@ -391,7 +391,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         vector<double> q(7);
        
         // Real-time loop
-        while (timer_count < (2500))
+        while (timer_count < (SimCount))
         {
             now = GetTickUs();
             
@@ -414,8 +414,9 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                     // cout << q[i] << endl;
                 }
               
-            
+                
                 q_input = (base_feedback.actuators(3).position() ) / 180.0 * M_PI;
+               
          
                 eulerAngel[0] = base_feedback.base().tool_pose_theta_x() / 180. * M_PI;
                 eulerAngel[1] = base_feedback.base().tool_pose_theta_y() / 180. * M_PI;

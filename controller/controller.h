@@ -36,6 +36,7 @@ class controller
         double f_d_tem;
         double Q_max;
         double TimeUnit;
+        double SimTime;
         
         std::string control_mode;
 

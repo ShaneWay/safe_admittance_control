@@ -261,7 +261,7 @@ Eigen::Vector2d CSRICommManager::getBaseForce(Eigen::Vector3d eulerAngle)
 
 double CSRICommManager::getJointForce()
 {
-	double length = 0.5;
-	double joint_force = length * force[0];
+	double length = 0.69;
+	double joint_force = -length * force[0];
 	return joint_force;
 }
