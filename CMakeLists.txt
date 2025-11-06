@@ -75,7 +75,8 @@ foreach ( SRC_FILE ${EXE_LIST} )
   ./dynamics_model/dynamics_model.cpp 
   ./kinematics_model/kinematics_model.cpp 
   # ./controller/controller_2.cpp 
-  ./controller/controller.cpp 
+  # ./controller/controller.cpp 
+  ./controller/BaseController.cpp
   ./controller/ConfigLoader.cpp
   ./force_sensor/sriCommATParser.cpp
   ./force_sensor/sriCommATParser.h

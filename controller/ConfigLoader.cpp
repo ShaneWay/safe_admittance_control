@@ -20,6 +20,7 @@ ConfigLoader::ConfigLoader(const std::string& filename) {
         cfg_.controller.TimeUnit = config["controller"]["TimeUnit"].as<double>();
         cfg_.controller.SimTime = config["controller"]["SimTime"].as<double>();
         cfg_.controller.control_mode = config["controller"]["control_mode"].as<std::string>();
+        cfg_.controller.control_target = config["controller"]["control_target"].as<std::string>();
 
     } catch (const std::exception& e) {
         std::cerr << "Failed to load config: " << e.what() << std::endl;

@@ -23,6 +23,7 @@ struct ControllerConfig {
      double SimTime;
 
      std::string control_mode;
+     std::string control_target;
 };
 
 struct Config {

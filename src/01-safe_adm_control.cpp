@@ -310,8 +310,8 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     Config cfg = loader.getConfig();
     int SimCount = cfg.controller.SimTime / cfg.controller.TimeUnit;
 
-    controller control(cfg);
-    control.printParams();
+    auto controller = ControllerFactory::create(cfg.controller);
+    controller->printParams();
     cout << "##################################" << endl;
     cout << "generate trajetory" << endl;
     cout << "##################################\n" << endl;
@@ -427,7 +427,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // cout << "f_input: " << f_input << endl;
 
                 begin_tau = GetTickUs();
-                tau = control.getTorque(T, f_input, q_input);
+                tau = controller.getTorque(T, f_input, q_input);
                 end_tau = GetTickUs();
                 cout << "real tau: " << tau << endl;
                 cout << "==========================================!" << endl;
