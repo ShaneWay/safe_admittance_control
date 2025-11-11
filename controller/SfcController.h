@@ -5,7 +5,7 @@
 
 class SfcController : public BaseController {
 public:
-    SfcController(const Config& config) : BaseController(const Config& config)
+    SfcController(const Config& config) : BaseController(config)
     {
 
     }
@@ -42,5 +42,14 @@ public:
         frame++;
     }
 
+    double getTorqueOnPositionControl(const double & T, double & f_ext_from_sensor, double& q_frome_sensor) override
+    {
 
-}
+    }
+
+    void refreshOnPositionControl(const double & T) override
+    {
+
+    }
+
+};

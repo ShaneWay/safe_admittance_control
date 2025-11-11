@@ -8,14 +8,14 @@
 
 class ControllerFactory {
 public:
-    static std::unique_ptr<BaseController> create(const ControllerConfig& cfg) {
-        if (cfg.control_mode == "normal") {
+    static std::unique_ptr<BaseController> create(const Config& cfg) {
+        if (cfg.controller.control_mode == "normal") {
             return std::make_unique<NormalController>(cfg);
-        } else if (cfg.control_mode == "smc") {
+        } else if (cfg.controller.control_mode == "smc") {
             return std::make_unique<SmcController>(cfg);
-        } else if (cfg.control_mode == "sfc") {
+        } else if (cfg.controller.control_mode == "sfc") {
             return std::make_unique<SfcController>(cfg);
-        } else if (cfg.control_mode == "kikuuwe") {
+        } else if (cfg.controller.control_mode == "kikuuwe") {
             return std::make_unique<KikuuweController>(cfg);
         }
     }

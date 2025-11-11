@@ -5,12 +5,12 @@
 
 class KikuuweController : public BaseController {
 public:
-    KikuuweController(const Config& config) : BaseController(const Config& config)
+    KikuuweController(const Config& config) : BaseController(config)
     {
 
     }
 
-    double getTogetTorqueOnForceControlrque(const double & T, double & f_ext_from_sensor, double& q_frome_sensor) override
+    double getTorqueOnForceControl(const double & T, double & f_ext_from_sensor, double& q_frome_sensor) override
     {
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
@@ -43,7 +43,7 @@ public:
 
         double Mat = K_hat + M / (T * T);
 
-        double tao_star_tem = Mat * ((q_x_star[frame] - q_s_star[frame]);
+        double tao_star_tem = Mat * (q_x_star[frame] - q_s_star[frame]);
     
         tau_star.push_back(tao_star_tem);
 
@@ -71,13 +71,15 @@ public:
     }
 
 
-    double getTorqueOnPositionControlrque(const double & T, double & f_ext_from_sensor, double& q_frome_sensor) override
+    double getTorqueOnPositionControl(const double & T, double & f_ext_from_sensor, double& q_frome_sensor) override
     {
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
         q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/T);
         cout << "f[frame " << frame << "] = " << f[frame] << endl;
         cout << "q[frame " << frame << "] = " << q_s[frame] << endl;
+        cout << "kikuuwe_position_control" << endl;
+        cout << "q0[frame " << frame << "] = " << q0[frame] << endl;
 
         double K_hat = K + B / T + L * T;
         // get new u_x_star
@@ -90,7 +92,7 @@ public:
 
         // get new phi_b
         double phi_b_tem;
-        phi_b_tem = (B * (q_x[frame] - q_s[frame])) / T - L * a[frame];
+        phi_b_tem = (B * (q_x[frame - 1] - q_s[frame - 1])) / T - L * a[frame - 1];
         phi_b.push_back(phi_b_tem);
 
         // get new phi a
@@ -99,9 +101,9 @@ public:
         phi_a.push_back(phi_a_tem);
 
         // get new q_star
-        double q_star_tem;
-        q_star_tem = q[frame] + (phi_b[frame] - phi_a[frame]) / (K_hat + M / (T * T));
-        q_star.push_back(q_star_tem);
+        double q_s_star_tem;
+        q_s_star_tem = q_s[frame] + (phi_b[frame] - phi_a[frame]) / (K_hat + M / (T * T));
+        q_s_star.push_back(q_s_star_tem);
 
         // get mat1 and mat2
         double Mat1  = 1 + K_x * (T * T) / (M_x + B_x * T );
@@ -109,7 +111,7 @@ public:
 
         // get new tau_star
         double tau_star_tem;
-        tau_star_tem = Mat2 / Mat1 * q_x_star[frame] - Mat2 * q_star[frame];
+        tau_star_tem = Mat2 / Mat1 * q_x_star[frame] - Mat2 * q_s_star[frame];
         tau_star.push_back(tau_star_tem);
 
         // get new output tau
@@ -129,13 +131,17 @@ public:
 
         // get new q_x
         double q_x_tem;
-        q_x_tem = q_star[frame] + (K_hat + M / (T * T)) / tau[frame];
+        q_x_tem = q_s_star[frame] + tau[frame] /  (K_hat + M / (T * T)) ;
         q_x.push_back(q_x_tem);
 
         //get new u_x
         double u_x_tem;
         u_x_tem = (q_x[frame] - q_x[frame - 1]) / T;
         u_x.push_back(u_x_tem);
+
+        double q_x_hat_tem = (q_x[frame] - q_x[frame - 1]) / T;
+        q_x_hat.push_back(q_x_hat_tem);
+        std::cout << "q_x_hat_tem: " << q_x_hat_tem << std::endl;
 
         // get new a
         double a_tem;
@@ -146,4 +152,4 @@ public:
     }
 
 
-}
+};

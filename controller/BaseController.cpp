@@ -7,6 +7,7 @@ BaseController::BaseController(const Config& config)
 {   
     M_x = config.controller.M_x;
     B_x = config.controller.B_x;
+    K_x = config.controller.K_x;
     K = config.controller.K;
     B = config.controller.B;
     L = config.controller.L;
@@ -56,8 +57,9 @@ BaseController::BaseController(const Config& config)
     }
     
     this->printParams();
-    if (target_ = ControlTarget::PositionControl)
+    if (target_ == ControlTarget::PositionControl)
     {
+        std::cout << "generate===============================" << std::endl;
         generateJointTrajectory();
     }
 }
@@ -76,14 +78,20 @@ void BaseController::generateJointTrajectory()
 {
     unsigned int time_count = 0;
     double t = 0;
-    double end_angle = 170 / 180 * M_PI;
-    int count_total = SimTime / TimeUnit;
+    double end_angle = 60. / 180. * M_PI;
+    int count_total = (SimTime - 2.) / TimeUnit;
     double step =  (end_angle - init_angle) / count_total;
     for (time_count = 0; time_count < count_total; time_count++ )
     {
-        q0.pushback(init_angle + time_count * step )
-        q0_dot.pushback(step);
-        q0_ddot.pushback(0.);
+        q0.push_back(init_angle + time_count * step );
+        q0_dot.push_back(step);
+        q0_ddot.push_back(0.);
+    }
+    for (int i = count_total; i < SimTime/TimeUnit + 100; i++)
+    {
+        q0.push_back(end_angle );
+        q0_dot.push_back(0.);
+        q0_ddot.push_back(0.);
     }
 }
 
@@ -114,7 +122,7 @@ void BaseController::refresh(const double & T)
     }
 }
 
-BaseController::printParams()
+void BaseController::printParams() const
 {
     std::cout << "====Base Controller Parameters====\n"
               << "M_x: " << M_x << "\n"
@@ -135,13 +143,22 @@ BaseController::printParams()
 void BaseController::plot_tau()
 {
     plt::figure_size(1200, 780);
-    plt::named_plot("real_tao", tau_star);
     plt::named_plot("projected_tao", tau);
     plt::named_plot("input_f", f);
     plt::xlabel("time (us)");
     plt::ylabel("torque (Nm)");
     plt::legend();
     plt::save("result_tao.pdf");
+}
+
+void BaseController::plot_real_tau()
+{
+    plt::figure_size(1200, 780);
+    plt::named_plot("real_tao", tau_star);
+    plt::xlabel("time (us)");
+    plt::ylabel("torque (Nm)");
+    plt::legend();
+    plt::save("real_tao.pdf");
 }
 
 
@@ -156,11 +173,22 @@ void BaseController::plot_q()
     plt::save("result_qs.pdf");
 }
 
+void BaseController::plot_q0()
+{
+    plt::figure_size(1200, 780);
+    plt::named_plot("q0", q0,  "r--");
+    // plt::named_plot("q_s", q_s);
+    plt::legend();
+    plt::title("q0");
+    // plt::xlim(0, 100);
+    plt::save("result_q0.pdf");
+}
+
 void BaseController::plot_q_hat()
 {
     plt::figure_size(1200, 780);
     plt::named_plot("q_x_hat", q_x_hat,  "r--");
-    // plt::named_plot("q_s_hat", q_s_hat);
+    plt::named_plot("q_s_hat", q_s_hat);
     plt::legend();
     plt::title("q_hat");
     // plt::xlim(0, 100);

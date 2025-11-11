@@ -5,7 +5,7 @@
 
 class NormalController : public BaseController {
 public:
-    NormalController(const Config& config) : BaseController(const Config& config)
+    NormalController(const Config& config) : BaseController(config)
     {
         
     }
@@ -63,14 +63,14 @@ public:
         
         double K_hat = K + B / T + L * T;
         double q_x_ddot;
-        q_x_ddot =(-B_x * (q_x_dot[frame - 1] -q0_dot[frame]) - K_x * (q_x[frame - 1] - q0[frame]) + f[frame]) / M_x + q0_ddot[frame];
+        q_x_ddot =(-B_x * (q_x_hat[frame - 1] -q0_dot[frame]) - K_x * (q_x[frame - 1] - q0[frame]) + f[frame]) / M_x + q0_ddot[frame];
 
         double q_x_dot_tem;
-        q_x_dot_tem = q_x_dot[frame - 1] + T * q_x_ddot;
-        q_x_dot.push_back(q_x_dot_tem);
+        q_x_dot_tem = q_x_hat[frame - 1] + T * q_x_ddot;
+        q_x_hat.push_back(q_x_dot_tem);
 
         double q_x_tem;
-        q_x_tem = q_x[frame - 1] + T * q_x_dot[frame];
+        q_x_tem = q_x[frame - 1] + T * q_x_hat[frame];
         q_x.push_back(q_x_tem);
 
         double a_tem;
@@ -81,7 +81,7 @@ public:
         q_s_dot = (q_s[frame] - q_s[frame - 1]) / T;
 
         double tau_star_tem;
-        tau_star_tem = M * q_x_ddot + K * (q_x[frame] - q_s[frame]) + B * (q_x_dot[frame] - q_s_dot) + L * a[frame];
+        tau_star_tem = M * q_x_ddot + K * (q_x[frame] - q_s[frame]) + B * (q_x_hat[frame] - q_s_dot) + L * a[frame];
         tau_star.push_back(tau_star_tem);
 
         cout << "tau_star:" <<  tau_star_tem << endl;
@@ -101,4 +101,4 @@ public:
     }
 
 
-}
+};

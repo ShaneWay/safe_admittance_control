@@ -1,13 +1,18 @@
 #pragma once
+#include <iostream>
 #include <vector>
+
 #include "ConfigLoader.h"
+
+using namespace std;
 
 enum class ControlTarget { ForceControl, PositionControl };
 
 class BaseController {
-    private:
+    public:
         double M_x;
         double B_x;
+        double K_x;
 
         double K;
         double B;
@@ -61,7 +66,9 @@ class BaseController {
         void parseTarget(const Config& config);
         void printParams() const;
         void plot_tau();
+        void plot_real_tau();
         void plot_q();
+        void plot_q0();
         void plot_q_hat();
 
         void generateJointTrajectory();
@@ -77,4 +84,4 @@ class BaseController {
     private:
         ControlTarget target_;
 
-}
+};

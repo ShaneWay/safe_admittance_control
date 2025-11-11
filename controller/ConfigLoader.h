@@ -9,6 +9,7 @@ struct RobotConfig {
 struct ControllerConfig {
      double M_x;
      double B_x;
+     double K_x;
 
      double K;
      double B;

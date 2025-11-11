@@ -2,23 +2,26 @@ robot:
   init_angle: 122
   
 controller:
-  M_x: 1
+  M_x: 35
   B_x: 1
+  K_x: 10
 
   K: 500
   B: 30
   L: 30
 
-  M: 0.5
+  M: 10
 
-  F_max: 7
-  Q_max: 0.3
+  F_max: 5
+  Q_max: 0.2
 
   f_d_tem: -0.3
 
   TimeUnit: 0.002
-  SimTime: 3
+  SimTime: 6
 
 
-  control_mode: "sfc"
+  control_mode: "kikuuwe"
+  control_target: "position"
+
   

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(kortex_admittance_control  LANGUAGES CXX)
 
 # Activate C++ 11
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 find_package(Eigen3)
 find_package(yaml-cpp)
 message(${CMAKE_CXX_COMPILER})

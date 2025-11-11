@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <dynamics_model.h>
 
-#include <controller.h>
+#include <ControllerFactory.h>
 
 #include "sriCommDefine.h"
 #include "sriCommManager.h"
@@ -310,8 +310,8 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     Config cfg = loader.getConfig();
     int SimCount = cfg.controller.SimTime / cfg.controller.TimeUnit;
 
-    auto controller = ControllerFactory::create(cfg.controller);
-    controller->printParams();
+    auto controller = ControllerFactory::create(cfg);
+    // controller->printParams();
     cout << "##################################" << endl;
     cout << "generate trajetory" << endl;
     cout << "##################################\n" << endl;
@@ -427,7 +427,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // cout << "f_input: " << f_input << endl;
 
                 begin_tau = GetTickUs();
-                tau = controller.getTorque(T, f_input, q_input);
+                tau = controller->getTorque(T, f_input, q_input);
                 end_tau = GetTickUs();
                 cout << "real tau: " << tau << endl;
                 cout << "==========================================!" << endl;
@@ -469,7 +469,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 timer_count++;
                 // last = GetTickUs();
                 begin_update = GetTickUs();
-                control.refresh(T);
+                controller->refresh(T);
                 end_update = GetTickUs();
 
                 last = GetTickUs();
@@ -488,9 +488,11 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         }
         
         sleep(1);
-        control.plot_q();
-        control.plot_tau();
-        control.plot_q_hat();
+        controller->plot_q();
+        controller->plot_real_tau();
+        controller->plot_q0();
+        controller->plot_tau();
+        controller->plot_q_hat();
         cout << "##################################" << endl;
         cout << "plot data" << endl;
         cout << "##################################\n" << endl;
