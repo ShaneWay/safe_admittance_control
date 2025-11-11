@@ -18,7 +18,7 @@ ConfigLoader::ConfigLoader(const std::string& filename) {
         cfg_.controller.F_max = config["controller"]["F_max"].as<double>();
         cfg_.controller.f_d_tem = config["controller"]["f_d_tem"].as<double>();
         cfg_.controller.Q_max = config["controller"]["Q_max"].as<double>();
-        cfg_.controller.TimeUnit = config["controller"]["TimeUnit"].as<double>();
+        cfg_.controller.dt = config["controller"]["dt"].as<double>();
         cfg_.controller.SimTime = config["controller"]["SimTime"].as<double>();
         cfg_.controller.control_mode = config["controller"]["control_mode"].as<std::string>();
         cfg_.controller.control_target = config["controller"]["control_target"].as<std::string>();

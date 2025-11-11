@@ -294,21 +294,24 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
 
     int timer_count = 0;
     int64_t now = 0;
-    int64_t last = 0;                                                                                                                                                                                                                                                                                                                               
+    int64_t last = 0;  
     int64_t begin = 0;
+
     double_t aver_time = 0.;
 
-    int64_t begin_tau = 0;                                                                                                                                                                                                                                                                                                                               
+    int64_t begin_tau = 0; 
     int64_t end_tau = 0;
-    int64_t begin_update = 0;                                                                                                                                                                                                                                                                                                                               
+
+    int64_t begin_update = 0;
     int64_t end_update = 0;
+    
     double_t aver_tau_time = 0.;
     double_t aver_update_time = 0.;
 
     KortexDynamics model;
     ConfigLoader loader("../controller/controller.yaml");
     Config cfg = loader.getConfig();
-    int SimCount = cfg.controller.SimTime / cfg.controller.TimeUnit;
+    int SimCount = cfg.controller.SimTime / cfg.controller.dt;
 
     auto controller = ControllerFactory::create(cfg);
     // controller->printParams();
@@ -400,7 +403,6 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
             {
                 // std::cout << "time: " << now - begin <<  " us" << endl;
                 begin = GetTickUs();
-                double T = 0.002;
                 
                 // Position command to first actuator is set to measured one to avoid following error to trigger
                 // Bonus: When doing this instead of disabling the following error, if communication is lost and first
@@ -427,7 +429,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // cout << "f_input: " << f_input << endl;
 
                 begin_tau = GetTickUs();
-                tau = controller->getTorque(T, f_input, q_input);
+                tau = controller->getTorque(f_input, q_input);
                 end_tau = GetTickUs();
                 cout << "real tau: " << tau << endl;
                 cout << "==========================================!" << endl;
@@ -469,7 +471,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 timer_count++;
                 // last = GetTickUs();
                 begin_update = GetTickUs();
-                controller->refresh(T);
+                controller->refresh();
                 end_update = GetTickUs();
 
                 last = GetTickUs();

@@ -15,7 +15,7 @@ BaseController::BaseController(const Config& config)
     F_max = config.controller.F_max;
     Q_max = config.controller.Q_max;
     f_d_tem = config.controller.f_d_tem;
-    TimeUnit = config.controller.TimeUnit;
+    dt = config.controller.dt;
     SimTime = config.controller.SimTime;
     control_mode = config.controller.control_mode;
     control_target = config.controller.control_target;
@@ -79,7 +79,7 @@ void BaseController::generateJointTrajectory()
     unsigned int time_count = 0;
     double t = 0;
     double end_angle = 60. / 180. * M_PI;
-    int count_total = (SimTime - 2.) / TimeUnit;
+    int count_total = (SimTime - 2.) / dt;
     double step =  (end_angle - init_angle) / count_total;
     for (time_count = 0; time_count < count_total; time_count++ )
     {
@@ -87,7 +87,7 @@ void BaseController::generateJointTrajectory()
         q0_dot.push_back(step);
         q0_ddot.push_back(0.);
     }
-    for (int i = count_total; i < SimTime/TimeUnit + 100; i++)
+    for (int i = count_total; i < SimTime / dt + 100; i++)
     {
         q0.push_back(end_angle );
         q0_dot.push_back(0.);
@@ -95,29 +95,29 @@ void BaseController::generateJointTrajectory()
     }
 }
 
-double BaseController::getTorque(const double & T, double & f_ext_from_sensor, double& q_frome_sensor)
+double BaseController::getTorque(double & f_ext_from_sensor, double& q_frome_sensor)
 {
     switch (target_)
     {
     case ControlTarget::ForceControl:
-        return getTorqueOnForceControl(T, f_ext_from_sensor, q_frome_sensor);
+        return getTorqueOnForceControl(f_ext_from_sensor, q_frome_sensor);
         break;
     
     case ControlTarget::PositionControl:
-        return getTorqueOnPositionControl(T, f_ext_from_sensor, q_frome_sensor);
+        return getTorqueOnPositionControl(f_ext_from_sensor, q_frome_sensor);
         break;
     }
 }
-void BaseController::refresh(const double & T)
+void BaseController::refresh()
 {
     switch (target_)
     {
     case ControlTarget::ForceControl:
-        refreshOnForceControl(T);
+        refreshOnForceControl();
         break;
     
     case ControlTarget::PositionControl:
-        refreshOnPositionControl(T);
+        refreshOnPositionControl();
         break;
     }
 }

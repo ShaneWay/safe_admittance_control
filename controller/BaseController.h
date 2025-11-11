@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <vector>
-
+#include <variant>
 #include "ConfigLoader.h"
 
 using namespace std;
@@ -25,7 +25,7 @@ class BaseController {
         double F_max;
         double f_d_tem;
         double Q_max;
-        double TimeUnit;
+        double dt;
         double SimTime;
         std::string control_mode;
         std::string control_target;
@@ -61,8 +61,8 @@ class BaseController {
         BaseController (const Config& config);
         virtual ~BaseController() = default;
 
-        double getTorque(const double & T, double & f_ext_from_sensor, double& q_frome_sensor);
-        void refresh(const double & T);
+        double getTorque(double & f_ext_from_sensor, double& q_frome_sensor);
+        void refresh();
         void parseTarget(const Config& config);
         void printParams() const;
         void plot_tau();
@@ -76,10 +76,10 @@ class BaseController {
         double proj(double tao_star_input);
 
     protected:
-        virtual double getTorqueOnForceControl(const double & T, double & f_ext_from_sensor, double& q_frome_sensor) = 0;
-        virtual void refreshOnForceControl(const double & T) = 0;
-        virtual double getTorqueOnPositionControl(const double & T, double & f_ext_from_sensor, double& q_frome_sensor) = 0;
-        virtual void refreshOnPositionControl(const double & T) = 0;
+        virtual double getTorqueOnForceControl(double & f_ext_from_sensor, double& q_frome_sensor) = 0;
+        virtual void refreshOnForceControl() = 0;
+        virtual double getTorqueOnPositionControl(double & f_ext_from_sensor, double& q_frome_sensor) = 0;
+        virtual void refreshOnPositionControl() = 0;
     
     private:
         ControlTarget target_;

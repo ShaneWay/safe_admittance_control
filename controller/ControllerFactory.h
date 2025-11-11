@@ -15,7 +15,7 @@ public:
             return std::make_unique<SmcController>(cfg);
         } else if (cfg.controller.control_mode == "sfc") {
             return std::make_unique<SfcController>(cfg);
-        } else if (cfg.controller.control_mode == "kikuuwe") {
+        } else if (cfg.controller.control_mode == "kik") {
             return std::make_unique<KikuuweController>(cfg);
         }
     }

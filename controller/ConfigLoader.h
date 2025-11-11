@@ -20,7 +20,7 @@ struct ControllerConfig {
      double F_max;
      double f_d_tem;
      double Q_max;
-     double TimeUnit;
+     double dt;
      double SimTime;
 
      std::string control_mode;
