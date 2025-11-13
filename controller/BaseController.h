@@ -3,67 +3,76 @@
 #include <vector>
 #include <variant>
 #include "ConfigLoader.h"
+#include <kinematics_model.h>
 
 using namespace std;
+typedef vector<Eigen::Vector2d> vv2d;
+
 
 enum class ControlTarget { ForceControl, PositionControl };
 
 class BaseController {
     public:
-        double M_x;
-        double B_x;
-        double K_x;
+        Eigen::Matrix2d M_x;
+        Eigen::Matrix2d B_x;
+        Eigen::Matrix2d K_x;
 
-        double K;
-        double B;
-        double L;
+        Eigen::Matrix2d K;
+        Eigen::Matrix2d B;
+        Eigen::Matrix2d L;
         
-        double M;
+        Eigen::Matrix2d M;
 
-        double init_angle;
+        Eigen::Vector2d init_angle;
 
-        double F_max;
-        double f_d_tem;
-        double Q_max;
+        Eigen::Vector2d F_max;
+        Eigen::Vector2d f_d_tem;
+        Eigen::Vector2d Q_max;
         double dt;
         double SimTime;
         std::string control_mode;
         std::string control_target;
 
-        vector<double> tau;
-        vector<double> tau_star;
+        Eigen::Vector2d init_angle;
+        Eigen::Vector2d init_pos;
+        double omiga;
+        double amplitude;
+        double x_amplitude;
 
-        vector<double> u_x;
-        vector<double> u_x_star;
+        vv2d tau;
+        vv2d tau_star;
 
-        vector<double> q_x;
-        vector<double> q_x_hat;
-        vector<double> q_x_star;
+        vv2d u_x;
+        vv2d u_x_star;
 
-        vector<double> phi_b;
-        vector<double> phi_a;
+        vv2d q_x;
+        vv2d q_x_hat;
+        vv2d q_x_star;
 
-        vector<double> q_s;
-        vector<double> q_s_star;
+        vv2d phi_b;
+        vv2d phi_a;
 
-        vector<double> a;
-        vector<double> integral_a;
+        vv2d q_s;
+        vv2d q_s_star;
+
+        vv2d a;
+        vv2d integral_a;
         int32_t frame;
-        vector<double> f;
-        vector<double> f_d;
-        vector<double> q_s_hat;
+        vv2d f;
+        vv2d f_d;
+        vv2d q_s_hat;
 
-        vector<double> q0;
-        vector<double> q0_dot;
-        vector<double> q0_ddot;
+        vv2d q0;
+        vv2d q0_dot;
+        vv2d q0_ddot;
         
     public:
-        BaseController (const Config& config);
+        BaseController (const ConfigLoader& loader);
         virtual ~BaseController() = default;
 
-        double getTorque(double & f_ext_from_sensor, double& q_frome_sensor);
+        double getTorque(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d & q_frome_sensor);
         void refresh();
-        void parseTarget(const Config& config);
+        void parseTarget(YAML::Node &ctrl);
         void printParams() const;
         void plot_tau();
         void plot_real_tau();
@@ -73,15 +82,17 @@ class BaseController {
 
         void generateJointTrajectory();
 
-        double proj(double tao_star_input);
+        double proj(Eigen::Vector2d &tao_star_input);
 
     protected:
-        virtual double getTorqueOnForceControl(double & f_ext_from_sensor, double& q_frome_sensor) = 0;
+        virtual double getTorqueOnForceControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) = 0;
         virtual void refreshOnForceControl() = 0;
-        virtual double getTorqueOnPositionControl(double & f_ext_from_sensor, double& q_frome_sensor) = 0;
+        virtual double getTorqueOnPositionControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) = 0;
         virtual void refreshOnPositionControl() = 0;
     
     private:
         ControlTarget target_;
+        int count_total;
+        KortexKinematics model;
 
 };

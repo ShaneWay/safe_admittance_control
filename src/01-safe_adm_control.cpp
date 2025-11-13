@@ -310,10 +310,10 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
 
     KortexDynamics model;
     ConfigLoader loader("../controller/controller.yaml");
-    Config cfg = loader.getConfig();
-    int SimCount = cfg.controller.SimTime / cfg.controller.dt;
-
-    auto controller = ControllerFactory::create(cfg);
+    std::string type = loader.getNode("controller")["controller_name"].as<std::string>();
+    
+    auto controller = ControllerFactory::create(type, loader);
+    int SimCount = controller.SimTime / controller.dt;
     // controller->printParams();
     cout << "##################################" << endl;
     cout << "generate trajetory" << endl;
@@ -362,13 +362,13 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         base_feedback = base_cyclic->Refresh(base_command);
         
 
-        double f_input;
-        double q_input;
-        double tau;
+        Vector2d f_input;
+        Vector2d q_input;
+        Vector2d tau;
         Eigen::Matrix3d endEffectPose;
-        double q_init;
-        
-        q_init = base_feedback.actuators(3).position();
+        Vector2d q_init;
+        q_init[0] = base_feedback.actuators(1).position();
+        q_init[1] = base_feedback.actuators(3).position();
 
         eulerAngel[0] = base_feedback.base().tool_pose_theta_x() / 180. * M_PI;
         eulerAngel[1] = base_feedback.base().tool_pose_theta_y() / 180. * M_PI;
@@ -408,7 +408,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // Bonus: When doing this instead of disabling the following error, if communication is lost and first
                 //        actuator continues to move under torque command, resulting position error with command will
                 //        trigger a following error and switch back the actuator in position command to hold its position
-
+                base_command.mutable_actuators(1)->set_position(base_feedback.actuators(1).position());
                 base_command.mutable_actuators(3)->set_position(base_feedback.actuators(3).position());
 
                 for(int i =0; i < 7; i++){
@@ -417,7 +417,14 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 }
               
                 
-                q_input = (base_feedback.actuators(3).position() ) / 180.0 * M_PI;
+                if (base_feedback.actuators(1).position() > 200)
+                {
+                    q_input[0] = (base_feedback.actuators(1).position() - 360.0 ) / 180.0 * M_PI;
+                    q_input[1] = (base_feedback.actuators(3).position() ) / 180.0 * M_PI;
+                }else{
+                    q_input[0] = (base_feedback.actuators(1).position() ) / 180.0 * M_PI;
+                    q_input[1] = (base_feedback.actuators(3).position() ) / 180.0 * M_PI;
+                }
                
          
                 eulerAngel[0] = base_feedback.base().tool_pose_theta_x() / 180. * M_PI;

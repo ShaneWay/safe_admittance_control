@@ -13,88 +13,33 @@ public:
     }
     double getTorqueOnForceControl(double & f_ext_from_sensor, double& q_frome_sensor) override
     {
-        f.push_back(f_ext_from_sensor);
-        q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/dt);
-        q_s.push_back(q_frome_sensor);
-        cout << "f[frame " << frame << "] = " << f[frame] << endl;
-        cout << "q[frame " << frame << "] = " << q_s[frame] << endl;
-
-        // f_d.push_back(f_d_tem);
-
-        double K_hat = K + B / dt + L * dt;
-
-        double u_x_star_tem = ((M_x * q_x_hat[frame - 1]) + dt * (f[frame] + f_d[frame - 1]))
-        / (M_x + B_x * dt);
-        u_x_star.push_back(u_x_star_tem);
-        // std::cout << "f_d: " << f_d[frame] << std::endl;
-
-        double q_x_star_hat = proj_Q(u_x_star_tem);
-        std::cout << "q_x_star_hat: " << q_x_star_hat << std::endl;
-
-        double lamda = f[frame] + f_d[frame] - M_x * (q_x_star_hat - q_x_hat[frame - 1])/ dt - B_x * q_x_star_hat;
-        // std::cout << "lamda: " << lamda << std::endl;
-
-        double q_x_star_tem = q_x[frame - 1] + dt * u_x_star[frame];
-        // std::cout << "q_x_star: " << q_x_star_tem << std::endl;
-        q_x_star.push_back(q_x_star_tem);
-
-        double phi_b_tem = (B * (q_x[frame - 1] - q_s[frame - 1])) / dt - L * a[frame - 1];
-        phi_b.push_back(phi_b_tem);
-        // std::cout << "phi_b_tem: " << phi_b_tem << std::endl;
-
-
-        double phi_a_tem = M * (q_s[frame] - q_x[frame - 1] - dt * q_x_hat[frame - 1]) / (dt * dt);
-        phi_a.push_back(phi_a_tem);
-        // std::cout << "phi_a_tem: " << phi_a_tem << std::endl;
-
-
-        double q_s_star_tem = q_s[frame] + (phi_b[frame] - phi_a[frame]) / (K_hat + M / (dt * dt));
-        q_s_star.push_back(q_s_star_tem);
-        // std::cout << "q_s_star: " << q_s_star_tem << std::endl;
-
-
-        double Mat = K_hat + M / (dt * dt);
-
-        double tao_star_tem = Mat * ((q_x_star[frame] - q_s_star[frame]) - dt * dt * lamda / (M_x + dt * B_x));
-    
-        tau_star.push_back(tao_star_tem);
-
-        std::cout << "tao_star: " << tao_star_tem << endl;
-        double tau_tem = proj(tau_star[frame]);
-        tau.push_back(tau_tem);
-
-        return tau[frame];
+        
     }
 
     void refreshOnForceControl() override
     {
-        double K_hat = K + B / dt + L * dt;
-        double q_x_tem = q_s_star[frame] + tau[frame] / (K_hat + M / (dt * dt));
-        q_x.push_back(q_x_tem);
-
-        double q_x_hat_tem = (q_x[frame] - q_x[frame - 1]) / dt;
-        q_x_hat.push_back(q_x_hat_tem);
-        std::cout << "q_x_hat_tem: " << q_x_hat_tem << std::endl;
-    
-        double a_tem = a[frame - 1]  + dt * (q_x[frame] - q_s[frame]);
-        a.push_back(a_tem);
-
-        frame++;
+        
     }
 
     double proj_Q(double u_x_star)
     {   
-        if (u_x_star < -Q_max)
+        Eigen::Vector2d u_x_star_projected;
+        for (int i = 0; i < 2; i++)
         {
-            return -Q_max;
+            if (u_x_star[i] < -F_max[i])
+            {
+                u_x_star_projected[i] =  -F_max[i];
+            }
+            else if (u_x_star[i] > F_max[i])
+            {
+                u_x_star_projected[i] = F_max[i];
+            }
+            else
+            {
+                u_x_star_projected[i] = u_x_star[i];
+            }
         }
-        else if (u_x_star > Q_max)
-        {
-            return Q_max;
-        }
-        else{
-            return u_x_star;
-        }
+        return u_x_star_projected;
     }
 
     // double getTorqueOnPositionControl(double & f_ext_from_sensor, double& q_frome_sensor) override
@@ -172,47 +117,49 @@ public:
     {
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
-        q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/dt);
-        cout << "f[frame " << frame << "] = " << f[frame] << endl;
-        cout << "q[frame " << frame << "] = " << q_s[frame] << endl;
+        cout << "f[frame " << frame << "] = " << f[frame].transpose() << endl;
+        cout << "q[frame " << frame << "] = " << q_s[frame].transpose() << endl;
+        model.getJacobianMatrixTwoDOF(q_from_robot, jacobian_now);
+        //update q and f_ext , get them from sensor
+        tau_ext.push_back(jacobian_now.transpose() * f_from_sensor);
 
-        double K_hat = K + B / dt + L * dt;
+        Eigen::Matrix2d K_hat = K + B / dt + L * dt;
         // get new u_x_star
-        double u_x_star_tem =  (M_x * u_x[frame - 1] + dt * (M_x * q0_ddot[frame] + B_x * q0_dot[frame] + K_x * q0[frame] + f[frame])) / (M_x + B_x * dt );
+        Eigen::Vector2d u_x_star_tem = (M_x + B_x * dt ).inverse() * (M_x * u_x[frame - 1] + dt * (M_x * q0_ddot[frame] + B_x * q0_dot[frame] + K_x * q0[frame] + tau_ext[frame]));
         u_x_star.push_back(u_x_star_tem);
         
         // get new q_x_star
-        double q_x_star_tem = q_x[frame - 1] + dt * u_x_star[frame];
+        Eigen::Vector2d q_x_star_tem = q_x[frame - 1] + dt * u_x_star[frame];
         q_x_star.push_back(q_x_star_tem);
 
-        double h1 = 1. + dt * dt * K_x / (M_x + B_x * dt );
-        double h2 = K_hat + M / (dt * dt);
+        Eigen::Matrix2d h1 = Eigen::Matrix2d::Identity() + (M_x + B_x * dt ).inverse() * dt * dt * K_x;
+        Eigen::Matrix2d h2 = K_hat + M / (dt * dt);
 
-        double q_x_lim = q_x[frame - 1] + dt * proj_Q((q_x_star[frame] / h1 - q_x[frame - 1]) / dt);
-        double lamda = (M_x + B_x * dt ) / (dt * dt) *(q_x_star[frame] - h1 * q_x_lim);
+        Eigen::Vector2d q_x_lim = q_x[frame - 1] + dt * proj_Q((h1.inverse() * q_x_star[frame] - q_x[frame - 1]) / dt);
+        Eigen::Vector2d lamda = (M_x + B_x * dt ) / (dt * dt) *(q_x_star[frame] - h1 * q_x_lim);
 
         // get new phi_b
-        double phi_b_tem;
+        Eigen::Vector2d phi_b_tem;
         phi_b_tem = (B * (q_x[frame - 1] - q_s[frame - 1])) / dt - L * a[frame-1];
         phi_b.push_back(phi_b_tem);
 
         // get new phi a
-        double phi_a_tem;
+        Eigen::Vector2d phi_a_tem;
         phi_a_tem = M * (q_s[frame] - q_x[frame - 1] - dt * u_x[frame - 1]) / (dt * dt);
         phi_a.push_back(phi_a_tem);
 
         // get new q_star
-        double q_star_tem;
-        q_star_tem = q_s[frame] + (phi_b[frame] - phi_a[frame]) / (K_hat + M / (dt * dt));
+        Eigen::Vector2d q_star_tem;
+        q_star_tem = q_s[frame] + (phi_b[frame] - phi_a[frame]) * (K_hat + M / (dt * dt)).inverse();
         q_s_star.push_back(q_star_tem);
 
         // get new tau_star
-        double tau_star_tem;
-        tau_star_tem = h2 / h1 * q_x_star[frame] - h2 * q_s_star[frame] - h2 / h1 * dt * dt * lamda / (M_x + B_x * dt );
+        Eigen::Vector2d tau_star_tem;
+        tau_star_tem = h2 * h1.inverse() * q_x_star[frame] - h2 * q_s_star[frame] - h2 * h1.inverse() * (M_x + B_x * dt ).inverse() * dt * dt * lamda;
         tau_star.push_back(tau_star_tem);
 
         // get new output tau
-        double tau_tem;
+        Eigen::Vector2d tau_tem;
         tau_tem = proj(tau_star_tem);
         tau.push_back(tau_tem);
 
@@ -224,11 +171,11 @@ public:
 
     void refreshOnPositionControl() override
     {
-       double K_hat = K + B / dt + L * dt;
+        Eigen::Matrix2d K_hat = K + B / dt + L * dt;
 
         // get new q_x
-        double q_x_tem;
-        q_x_tem = q_s_star[frame] + tau[frame] /  (K_hat + M / (dt * dt)) ;
+        Eigen::Vector2d q_x_tem;
+        q_x_tem = q_s_star[frame] + (K_hat + M / (dt * dt)).inverse() * tau[frame];
         q_x.push_back(q_x_tem);
 
         //get new u_x
@@ -238,7 +185,6 @@ public:
 
         double q_x_hat_tem = (q_x[frame] - q_x[frame - 1]) / dt;
         q_x_hat.push_back(q_x_hat_tem);
-        std::cout << "q_x_hat_tem: " << q_x_hat_tem << std::endl;
 
         // get new a
         double a_tem;

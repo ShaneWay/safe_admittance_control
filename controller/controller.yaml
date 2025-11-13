@@ -21,7 +21,7 @@ controller:
   SimTime: 6
 
 
-  control_mode: "kikuuwe"
+  controller_name: "kikuuwe"
   control_target: "position"
 
   
