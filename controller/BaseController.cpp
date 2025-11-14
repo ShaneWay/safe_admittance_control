@@ -212,6 +212,25 @@ void BaseController::plot_tau()
     plt::save("result_tao.pdf");
 }
 
+void BaseController::plot_real_tau()
+{
+    plt::figure_size(1200, 780);
+
+    for (int i = 0; i < 2; i++)
+    {
+        string tau_string;
+        tau_string = "tau" + to_string(i+1);
+        plt::named_plot(tau_string, tau_star[i]);
+    }
+
+
+    plt::xlabel("time (us)");
+    plt::ylabel("torque (Nm)");
+    plt::title("Joint Torque");
+    plt::legend();
+    plt::save("real_tao.pdf");
+}
+
 void BaseController::plotExternalForce()
 {
     plt::figure_size(1200, 780);

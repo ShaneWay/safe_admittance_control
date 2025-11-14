@@ -77,8 +77,10 @@ class BaseController {
         void plot_tau();
         void plot_real_tau();
         void plot_q();
-        void plot_q0();
         void plot_q_hat();
+        void plotExternalForce()
+        void plotCartesianSpeed()
+        void plotCartesianPosition()
 
         void generateJointTrajectory();
 

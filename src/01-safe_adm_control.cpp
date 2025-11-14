@@ -361,20 +361,18 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         // Send a first frame
         base_feedback = base_cyclic->Refresh(base_command);
         
-
         Vector2d f_input;
         Vector2d q_input;
         Vector2d tau;
-        Eigen::Matrix3d endEffectPose;
         Vector2d q_init;
-        q_init[0] = base_feedback.actuators(1).position();
+        q_init[0] = base_feedback.actuators(0).position();
         q_init[1] = base_feedback.actuators(3).position();
 
         eulerAngel[0] = base_feedback.base().tool_pose_theta_x() / 180. * M_PI;
         eulerAngel[1] = base_feedback.base().tool_pose_theta_y() / 180. * M_PI;
         eulerAngel[2] = base_feedback.base().tool_pose_theta_z() / 180. * M_PI;
 
-        f_init = commManager.getJointForce();
+        f_init = commManager.getBaseForce(eulerAngel);
 
         cout << "##################################" << endl;
         cout << "get init force" << endl;
@@ -385,7 +383,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         auto control_mode_message = k_api::ActuatorConfig::ControlModeInformation();
         control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::TORQUE);
 
-    
+        actuator_config->SetControlMode(control_mode_message, 1);
         actuator_config->SetControlMode(control_mode_message, 4);
 
         std::cout << "Running torque control example for " << TIME_DURATION << " seconds" << std::endl;
@@ -408,7 +406,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // Bonus: When doing this instead of disabling the following error, if communication is lost and first
                 //        actuator continues to move under torque command, resulting position error with command will
                 //        trigger a following error and switch back the actuator in position command to hold its position
-                base_command.mutable_actuators(1)->set_position(base_feedback.actuators(1).position());
+                base_command.mutable_actuators(0)->set_position(base_feedback.actuators(1).position());
                 base_command.mutable_actuators(3)->set_position(base_feedback.actuators(3).position());
 
                 for(int i =0; i < 7; i++){
@@ -417,12 +415,12 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 }
               
                 
-                if (base_feedback.actuators(1).position() > 200)
+                if (base_feedback.actuators(0).position() > 200)
                 {
-                    q_input[0] = (base_feedback.actuators(1).position() - 360.0 ) / 180.0 * M_PI;
+                    q_input[0] = (base_feedback.actuators(0).position() - 360.0 ) / 180.0 * M_PI;
                     q_input[1] = (base_feedback.actuators(3).position() ) / 180.0 * M_PI;
                 }else{
-                    q_input[0] = (base_feedback.actuators(1).position() ) / 180.0 * M_PI;
+                    q_input[0] = (base_feedback.actuators(0).position() ) / 180.0 * M_PI;
                     q_input[1] = (base_feedback.actuators(3).position() ) / 180.0 * M_PI;
                 }
                
@@ -431,18 +429,18 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 eulerAngel[1] = base_feedback.base().tool_pose_theta_y() / 180. * M_PI;
                 eulerAngel[2] = base_feedback.base().tool_pose_theta_z() / 180. * M_PI;
 
-                f_input = commManager.getJointForce() - f_init;
+                f_input = commManager.getBaseForce(eulerAngel) - f_init;
 
                 // cout << "f_input: " << f_input << endl;
 
                 begin_tau = GetTickUs();
                 tau = controller->getTorque(f_input, q_input);
                 end_tau = GetTickUs();
-                cout << "real tau: " << tau << endl;
+                cout << "real tau: " << tau.transpose() << endl;
                 cout << "==========================================!" << endl;
 
-                 
-                base_command.mutable_actuators(3)->set_torque_joint(tau);
+                base_command.mutable_actuators(0)->set_torque_joint(tau[0]);
+                base_command.mutable_actuators(3)->set_torque_joint(tau[1]);
 
                 // base_command.mutable_actuators(1)->set_torque_joint(g[1]);
                 // base_command.mutable_actuators(3)->set_torque_joint(g[3]);
@@ -480,7 +478,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 begin_update = GetTickUs();
                 controller->refresh();
                 end_update = GetTickUs();
-
+                
                 last = GetTickUs();
                 cout << "current loop time: " << last - begin << " us" <<endl;
                 aver_time = aver_time + (last - begin) / 15000.;
@@ -498,15 +496,15 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         
         sleep(1);
         controller->plot_q();
-        controller->plot_real_tau();
-        controller->plot_q0();
-        controller->plot_tau();
         controller->plot_q_hat();
+        controller->plot_tau();
+        controller->plot_real_tau();
+        controller->plotExternalForce();
+        controller->plotCartesianSpeed();
+        controller->plotCartesianPosition();
         cout << "##################################" << endl;
         cout << "plot data" << endl;
         cout << "##################################\n" << endl;
-
-    
         std::cout << "Torque control example completed" << std::endl;
 // 
         // Set first actuator back in position 
@@ -575,8 +573,6 @@ int main(int argc, char **argv)
     auto base = new k_api::Base::BaseClient(router);
     auto base_cyclic = new k_api::BaseCyclic::BaseCyclicClient(router_real_time);
     auto actuator_config = new k_api::ActuatorConfig::ActuatorConfigClient(router);
-
-    
 
     // Example core
     bool success = true;
