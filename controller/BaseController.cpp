@@ -8,39 +8,51 @@ BaseController::BaseController(const ConfigLoader& loader)
     YAML::Node ctrl = loader.getNode("controller");
     YAML::Node robot = loader.getNode("robot");
 
-    M_x = loader.getMatrix4d("controller.M_x");
-    B_x = loader.getMatrix4d("controller.B_x");
-    K_x = loader.getMatrix4d("controller.K_x");
-    K = loader.getMatrix4d("controller.K");
-    B = loader.getMatrix4d("controller.B");
-    L = loader.getMatrix4d("controller.L");
-    M = loader.getMatrix4d("controller.M");
-    F_max = loader.getVector2d("controller.F_max")
-    Q_max = loader.getVector2d("controller.Q_max")
-    f_d_tem = loader.getVector2d("controller.f_d_tem")
+    M_x = loader.getMatrix2d(ctrl["M_x"]);
+    B_x = loader.getMatrix2d(ctrl["B_x"]);
+    K_x = loader.getMatrix2d(ctrl["K_x"]);
+    K = loader.getMatrix2d(ctrl["K"]);
+    B = loader.getMatrix2d(ctrl["B"]);
+    L = loader.getMatrix2d(ctrl["L"]);
+    M = loader.getMatrix2d(ctrl["M"]);
+    F_max = loader.getVector2d(ctrl["F_max"]);
+    Q_max = loader.getVector2d(ctrl["Q_max"]);
+    f_d_tem = loader.getVector2d(ctrl["f_d_tem"]);
     dt = ctrl["dt"].as<double>();
     SimTime = ctrl["SimTime"].as<double>();
-    control_mode = ctrl["control_mode"].as<std::string>();
+    controller_name = ctrl["controller_name"].as<std::string>();
     control_target = ctrl["control_target"].as<std::string>();
 
     parseTarget(ctrl);
 
-    init_angle = loader.getVector2d("init_angle");
-    init_pos = loader.getVector2d("init_pos");
-    omiga = robot["omiga"].as<double>();;
+    init_angle = loader.getVector2d(robot["init_angle"]);
+    init_pos = loader.getVector2d(robot["init_pos"]);
+    omiga = robot["omega"].as<double>();;
     amplitude = robot["amplitude"].as<double>();;
     x_amplitude = robot["x_amplitude"].as<double>();;
 
     init_angle[0] = init_angle[0] / 180. * M_PI;
     init_angle[1] = init_angle[1] / 180. * M_PI;
+    omiga = 2 * M_PI / omiga;
+
+    q0.push_back(init_angle);
+    q0_dot.push_back(Eigen::Vector2d::Zero());
+    q0_ddot.push_back(Eigen::Vector2d::Zero());
+    X.push_back(init_pos);
+    X_x.push_back(init_pos);
+
+    X0.push_back(init_pos); 
+    X0_dot.push_back(Eigen::Vector2d::Zero());
+    X0_ddot.push_back(Eigen::Vector2d::Zero());
 
     tau.push_back(Eigen::Vector2d::Zero());
     tau_star.push_back(Eigen::Vector2d::Zero());
+    tau_ext.push_back(Eigen::Vector2d::Zero());
 
     u_x.push_back(Eigen::Vector2d::Zero());
     u_x_star.push_back(Eigen::Vector2d::Zero());
     
-    q_x.push_back(Eigen::Vector2d::Zero());
+    q_x.push_back(init_angle);
     q_x_star.push_back(Eigen::Vector2d::Zero());
     q_x_hat.push_back(Eigen::Vector2d::Zero());
 
@@ -57,6 +69,7 @@ BaseController::BaseController(const ConfigLoader& loader)
     f.push_back(Eigen::Vector2d::Zero());
     f_d.push_back(f_d_tem);
 
+
     frame = 1;
     for(int i=0; i< 10000; i++)
     {
@@ -70,12 +83,59 @@ BaseController::BaseController(const ConfigLoader& loader)
     {
         std::cout << "generate===============================" << std::endl;
         generateJointTrajectory();
+        plotGeneratedTrajectory();
+        std::cout << "generate===end============================" << std::endl;
     }
+}
+
+void BaseController::plotGeneratedTrajectory()
+{
+
+     // plot tau_star
+    vector<vector<double>> X0_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < X0.size(); i++)
+        {
+            tem.push_back(X0[i][j]);
+        }
+        X0_plot.push_back(tem);
+    }
+
+    vector<vector<double>> q0_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i = 0; i < q0.size(); i++)
+        {
+            tem.push_back(q0[i][j]);
+        }
+        q0_plot.push_back(tem);
+    }
+
+    plt::figure_size(1200, 780);
+    for (int i = 0; i < 2; i++)
+    {
+        string X0_string, q0_string;
+        X0_string = "X0" + to_string(i+1);
+        q0_string = "q0" + to_string(i+1);
+        plt::named_plot(X0_string, X0_plot[i]);
+        plt::named_plot(q0_string, q0_plot[i]);
+
+    }
+    
+    plt::xlabel("Time (us)");
+    plt::ylabel("Position (m)");
+    plt::title("Cartesian Position");
+    plt::legend();
+    plt::save("GeneratedTrajectory.pdf");
+
 }
 
 void BaseController::parseTarget(YAML::Node &ctrl)
 {
-    if (ctrl["control_target"] == "position")
+    if (control_target == "position")
     {
         target_ = ControlTarget::PositionControl;
     }else{
@@ -89,11 +149,11 @@ void BaseController::generateJointTrajectory()
     unsigned int time_count = 0;
 
     Eigen::Vector2d X_0_tem , X_0_dot_tem, X_0_ddot_tem;
-    Eigen::Matrix2d jacobian_last;
-    Eigen::Matrix2d jacobian_now;
+    
     
     double t;
     int count_total = SimTime / dt + 1;
+    // std::cout << "count_total" << count_total << std::endl;
     for (time_count = 0; time_count < count_total; time_count++ )
     {
 
@@ -129,8 +189,10 @@ void BaseController::generateJointTrajectory()
         X0.push_back(X_0_tem);
         X0_dot.push_back(X_0_dot_tem);
         X0_ddot.push_back(X_0_ddot_tem);
+        // std::cout << "jacobian_now" << jacobian_now.transpose() << std::endl;
 
         model.getJacobianMatrixTwoDOF(q0[time_count], jacobian_now);
+        // std::cout << "jacobian_now" << jacobian_now.transpose() << std::endl;
 
         if ( frame == 0)
         {
@@ -146,9 +208,11 @@ void BaseController::generateJointTrajectory()
 
         jacobian_last = jacobian_now;
     }
+    q0_dot[0] = q0_ddot[1];
+    q0_dot[0] = q0_ddot[1];
 }
 
-double BaseController::getTorque(double & f_ext_from_sensor, double& q_frome_sensor)
+Eigen::Vector2d BaseController::getTorque(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor)
 {
     switch (target_)
     {
@@ -188,7 +252,7 @@ void BaseController::printParams() const
               << "Q_max: " << Q_max.transpose() << "\n"
               << "f_d_tem: " << f_d_tem.transpose() << "\n"
               << "SimeTime: " << SimTime << "\n"
-              << "Control_mode <<: " << control_mode << "\n"
+              << "controller_name <<: " << controller_name << "\n"
               << "Control_target <<: " << control_target << "\n"
               << "================================\n";
 }
@@ -197,11 +261,22 @@ void BaseController::plot_tau()
 {
     plt::figure_size(1200, 780);
 
+    vector<vector<double>> tau_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < tau.size(); i++)
+        {
+            tem.push_back(tau[i][j]);
+        }
+        tau_plot.push_back(tem);
+    }
+
     for (int i = 0; i < 2; i++)
     {
         string tau_string;
         tau_string = "tau" + to_string(i+1);
-        plt::named_plot(tau_string, tau[i]);
+        plt::named_plot(tau_string, tau_plot[i]);
     }
 
 
@@ -216,11 +291,22 @@ void BaseController::plot_real_tau()
 {
     plt::figure_size(1200, 780);
 
+    vector<vector<double>> tau_star_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < tau_star.size(); i++)
+        {
+            tem.push_back(tau_star[i][j]);
+        }
+        tau_star_plot.push_back(tem);
+    }
+
     for (int i = 0; i < 2; i++)
     {
         string tau_string;
         tau_string = "tau" + to_string(i+1);
-        plt::named_plot(tau_string, tau_star[i]);
+        plt::named_plot(tau_string, tau_star_plot[i]);
     }
 
 
@@ -235,11 +321,22 @@ void BaseController::plotExternalForce()
 {
     plt::figure_size(1200, 780);
 
+    vector<vector<double>> f_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < f.size(); i++)
+        {
+            tem.push_back(f[i][j]);
+        }
+        f_plot.push_back(tem);
+    }
+
     for (int i = 0; i < 2; i++)
     {
         string f_string;
         f_string = "f_ext" + to_string(i+1);
-        plt::named_plot(f_string, f[i]);
+        plt::named_plot(f_string, f_plot[i]);
     }
 
 
@@ -251,9 +348,42 @@ void BaseController::plotExternalForce()
 }
 
 
-void BaseController::plot_q()
+void BaseController::plotJointAngle()
 {
     plt::figure_size(1200, 780);
+
+    vector<vector<double>> q_s_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < q_s.size(); i++)
+        {
+            tem.push_back(q_s[i][j]);
+        }
+        q_s_plot.push_back(tem);
+    }
+
+    vector<vector<double>> q_x_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < q_x.size(); i++)
+        {
+            tem.push_back(q_x[i][j]);
+        }
+        q_x_plot.push_back(tem);
+    }
+
+    vector<vector<double>> q0_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < q0.size(); i++)
+        {
+            tem.push_back(q0[i][j]);
+        }
+        q0_plot.push_back(tem);
+    }
 
     for (int i = 0; i < 2; i++)
     {
@@ -262,103 +392,175 @@ void BaseController::plot_q()
         q_x_string = "q_x_joint" + to_string(i+1);
         q_0_string = "q_0_joint" + to_string(i+1);
 
-        plt::named_plot(q_s_string, q_s[i]);
-        plt::named_plot(q_x_string, q_x[i],"--" );
-        plt::named_plot(q_0_string, q0[i]);
+        plt::named_plot(q_s_string, q_s_plot[i]);
+        plt::named_plot(q_x_string, q_x_plot[i],"--" );
+        plt::named_plot(q_0_string, q0_plot[i]);
         
     }
 
-    plt::legend();
     plt::xlabel("Time (us)");
     plt::ylabel("Position (rad)");
+    plt::legend();
+
     plt::title("Joint Angles");
     // plt::xlim(0, 100);
     plt::save("JointAngles.pdf");
 }
 
 
-void BaseController::plot_q_hat()
+void BaseController::plotJointSpeed()
 {   
+    plt::figure_size(1200, 780);
+
+    vector<vector<double>> q_s_hat_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < q_s_hat.size(); i++)
+        {
+            tem.push_back(q_s_hat[i][j]);
+        }
+        q_s_hat_plot.push_back(tem);
+    }
    
     for (int i = 0; i < 2; i++)
     {
         string q_s_hat_string;
         q_s_hat_string = "q_s_hat" + to_string(i+1);
-        plt::named_plot(q_s_hat_string, q_s_hat[i]);
+        plt::named_plot(q_s_hat_string, q_s_hat_plot[i]);
     }
 
-    plt::figure_size(1200, 780);
     plt::title("q_s_hat");
     plt::xlabel("Time (us)");
     plt::ylabel("omiga (rad / s)");
-    plt::save("q_s_hat.pdf");
+    plt::legend();
+    plt::save("JointSpeed.pdf");
 }
 
 void BaseController::plotCartesianSpeed()
 {   
-    Eigen::Vector2d X_hat_tem;
-    X_hat_tem.push_back(Eigen::Vector2d(0., 0.));
-    for (int i = 0; i < 2; i++)
+    plt::figure_size(1200, 780);
+
+    Eigen::Matrix2d jacobian;
+
+    for(size_t i = 0; i < q_s_hat.size(); i ++)
     {
-        for (int j = 0; j < X.size(); j++)
+        model.getJacobianMatrixTwoDOF(q_s_hat[i], jacobian);
+        X_hat.push_back(jacobian * q_s_hat[i]);
+    }
+    
+    vector<vector<double>> X_hat_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < X_hat.size(); i++)
         {
-            X_hat_tem[j][i].push_back((X[j + 1][i] - X[j][i]) / dt)
+            tem.push_back(X_hat[i][j]);
         }
-    } 
+        X_hat_plot.push_back(tem);
+    }
+
+    vector<vector<double>> X0_hat_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < X0_dot.size(); i++)
+        {
+            tem.push_back(X0_dot[i][j]);
+        }
+        X0_hat_plot.push_back(tem);
+    }
     
     for (int i = 0; i < 2; i++)
     {
-        string X_s_hat_string;
+        string X_hat_string;
         string X0_hat_string;
         X_hat_string = "X_s_hat" + to_string(i+1);
         X0_hat_string = "X0_hat" + to_string(i+1);
-        plt::named_plot(X_s_hat_string, X_hat_tem[i]);
-        plt::named_plot(X0_hat_string, X0_dot[i]);
+        plt::named_plot(X_hat_string, X_hat_plot[i]);
+        plt::named_plot(X0_hat_string, X0_hat_plot[i]);
     }
 
-    plt::figure_size(1200, 780);
     plt::title("X_s_hat");
     plt::xlabel("Time (us)");
     plt::ylabel("omiga (rad / s)");
-    plt::save("X_s_hat.pdf");
+    plt::legend();
+    plt::save("CartesianSpeed.pdf");
 }
 
 void BaseController::plotCartesianPosition()
 {
-    KortexKinematics model;
-    vv2d X_x;
-    vv2d X_s;
+    plt::figure_size(1200, 780);
 
-    Eigen::Vector2d X_s_tem;
-    for(size_t i = 0; i < q_s.size(); i ++)
+    vector<vector<double>> X0_plot;
+    for (int j = 0; j < 2; j++)
     {
-        model.getFowardKinematicsTwoDOF(q_s[i], X_s_tem);
-        X_s.push_back(X_s_tem);
+        vector<double> tem;
+        for (int i =0; i < X0.size(); i++)
+        {
+            tem.push_back(X0[i][j]);
+        }
+        X0_plot.push_back(tem);
     }
 
     
-    Eigen::Vector2d X_x_tem;
-    for(size_t i = 0; i < q_x.size(); i ++)
+    Eigen::Vector2d X_tem;
+    for(size_t i = 0; i < q_s.size(); i++)
     {
-        model.getFowardKinematicsTwoDOF(q_x[i], X_x_tem);
-        X_x.push_back(X_x_tem);
+        model.getFowardKinematicsTwoDOF(q_s[i+1], X_tem);
+        X.push_back(X_tem);
     }
 
-    plt::figure_size(1200, 780);
+    vector<vector<double>> X_s_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < X.size(); i++)
+        {
+            tem.push_back(X[i][j]);
+        }
+        X_s_plot.push_back(tem);
+    }
+
+    
+    Eigen::Vector2d X_d_tem;
+    for(size_t i = 0; i < q_x.size(); i++)
+    {
+        model.getFowardKinematicsTwoDOF(q_x[i+1], X_d_tem);
+        X_x.push_back(X_d_tem);
+    }
+
+    vector<vector<double>> X_x_plot;
+    for (int j = 0; j < 2; j++)
+    {
+        vector<double> tem;
+        for (int i =0; i < X_x.size(); i++)
+        {
+            tem.push_back(X_x[i][j]);
+            // std::cout << tem[i] << std::endl;
+        }
+        X_x_plot.push_back(tem);
+    }
+
     for (int i = 0; i < 2; i++)
     {
-        string X0_string, X_s_string, X_s_string;
+        string X0_string, X_s_string, X_x_string;
         X0_string = "X0" + to_string(i+1);
         X_s_string = "X" + to_string(i+1);
         X_x_string = "X_d" + to_string(i+1);
         
-        plt::named_plot(X0_string, X0[i], "--");
-        plt::named_plot(X_s_string, X_s[i]);
-        plt::named_plot(X_x_string, X_x[i]);
+        plt::named_plot(X0_string, X0_plot[i], "--");
+        plt::named_plot(X_s_string, X_s_plot[i]);
+        plt::named_plot(X_x_string, X_x_plot[i]);
     }
+    plt::xlabel("Time (us)");
+    plt::ylabel("Position (m)");
+    plt::title("Cartesian Position");
+    plt::legend();
+    plt::save("CartesianPosition.pdf");
 }
 
-double BaseController::proj(Eigen::Vector2d& tau_star_input)
+Eigen::Vector2d BaseController::proj(Eigen::Vector2d& tau_star_input)
 {
     Eigen::Vector2d tau_projected;
     for (int i = 0; i < 2; i++)

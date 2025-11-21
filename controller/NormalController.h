@@ -5,12 +5,12 @@
 
 class NormalController : public BaseController {
 public:
-    NormalController(const Config& config) : BaseController(config)
+    NormalController(const ConfigLoader& loader) : BaseController(loader)
     {
         
     }
 
-    double getTorqueOnForceControl(double & f_ext_from_sensor, double& q_frome_sensor) override
+    Eigen::Vector2d getTorqueOnForceControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
     {
     }
 
@@ -18,15 +18,15 @@ public:
     {
     }
 
-    double getTorqueOnPositionControl(double & f_ext_from_sensor, double& q_frome_sensor) override
+    Eigen::Vector2d getTorqueOnPositionControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
     {
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
         cout << "f[frame " << frame << "] = " << f[frame].transpose() << endl;
         cout << "q[frame " << frame << "] = " << q_s[frame].transpose() << endl;
-        model.getJacobianMatrixTwoDOF(q_from_robot, jacobian_now);
+        model.getJacobianMatrixTwoDOF(q_frome_sensor, jacobian_now);
         //update q and f_ext , get them from sensor
-        tau_ext.push_back(jacobian_now.transpose() * f_from_sensor);
+        tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
         
         Eigen::Matrix2d K_hat = K + B / dt + L * dt;
         
@@ -45,11 +45,13 @@ public:
         a_tem = a[frame - 1] + dt * (q_x[frame] - q_s[frame]);
         a.push_back(a_tem);
 
-        Eigen::Vector2d q_s_dot;
-        q_s_dot = (q_s[frame] - q_s[frame - 1]) / dt;
+        Eigen::Vector2d q_s_hat_tem;
+        q_s_hat_tem = (q_s[frame] - q_s[frame - 1]) / dt;
+        q_s_hat.push_back(q_s_hat_tem);
 
         Eigen::Vector2d tau_star_tem;
-        tau_star_tem = M * q_x_ddot + K * (q_x[frame] - q_s[frame]) + B * (q_x_hat[frame] - q_s_dot) + L * a[frame];
+        tau_star_tem = M * q_x_ddot + K * (q_x[frame] - q_s[frame]) + B * (q_x_hat[frame] - q_s_hat[frame]) + L * a[frame];
+        cout << tau_star_tem << endl;
         tau_star.push_back(tau_star_tem);
 
         Eigen::Vector2d tau_tem;
@@ -61,7 +63,7 @@ public:
 
     }
 
-    void refreshOnPositionControl(const double & T) override
+    void refreshOnPositionControl() override
     {
         frame++;
     }

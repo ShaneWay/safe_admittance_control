@@ -88,7 +88,7 @@ bool example_angular_action_movement_exp(k_api::Base::BaseClient* base)
 
     auto actuator_count = base->GetActuatorCount();
 
-    float exp_start_angle[] = {25., 90., 90., 122, 0., 0., 0.};
+    float exp_start_angle[] = {307., 90., 90., 122, 0., 0., 0.};
 
     // Arm straight up
     for (size_t i = 0; i < actuator_count.count(); ++i) 
@@ -313,7 +313,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     std::string type = loader.getNode("controller")["controller_name"].as<std::string>();
     
     auto controller = ControllerFactory::create(type, loader);
-    int SimCount = controller.SimTime / controller.dt;
+    int SimCount = controller->SimTime / controller->dt;
     // controller->printParams();
     cout << "##################################" << endl;
     cout << "generate trajetory" << endl;
@@ -339,7 +339,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         cout << "open force sensor to get continuesly force data" << endl;
         cout << "##################################\n" << endl;
         sleep(2);
-        double f_init;
+        Vector2d f_init;
         Eigen::Vector3d eulerAngel;
 
         // Set the base in low-level servoing mode
@@ -392,7 +392,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         vector<double> q(7);
        
         // Real-time loop
-        while (timer_count < (SimCount))
+        while (timer_count < SimCount)
         {
             now = GetTickUs();
             
@@ -406,7 +406,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // Bonus: When doing this instead of disabling the following error, if communication is lost and first
                 //        actuator continues to move under torque command, resulting position error with command will
                 //        trigger a following error and switch back the actuator in position command to hold its position
-                base_command.mutable_actuators(0)->set_position(base_feedback.actuators(1).position());
+                base_command.mutable_actuators(0)->set_position(base_feedback.actuators(0).position());
                 base_command.mutable_actuators(3)->set_position(base_feedback.actuators(3).position());
 
                 for(int i =0; i < 7; i++){
@@ -495,13 +495,13 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         }
         
         sleep(1);
-        controller->plot_q();
-        controller->plot_q_hat();
+        controller->plotJointAngle();
+        controller->plotCartesianPosition();
         controller->plot_tau();
         controller->plot_real_tau();
         controller->plotExternalForce();
         controller->plotCartesianSpeed();
-        controller->plotCartesianPosition();
+        controller->plotJointSpeed();
         cout << "##################################" << endl;
         cout << "plot data" << endl;
         cout << "##################################\n" << endl;

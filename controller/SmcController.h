@@ -7,11 +7,11 @@ class SmcController : public BaseController {
 private:
 
 public:
-    SmcController(const Config& config) : BaseController(config)
+    SmcController(const ConfigLoader& loader) : BaseController(loader)
     {
 
     }
-    double getTorqueOnForceControl(double & f_ext_from_sensor, double& q_frome_sensor) override
+    Eigen::Vector2d getTorqueOnForceControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
     {
         
     }
@@ -21,18 +21,18 @@ public:
         
     }
 
-    double proj_Q(double u_x_star)
+    Eigen::Vector2d proj_Q(Eigen::Vector2d u_x_star)
     {   
         Eigen::Vector2d u_x_star_projected;
         for (int i = 0; i < 2; i++)
         {
-            if (u_x_star[i] < -F_max[i])
+            if (u_x_star[i] < -Q_max[i])
             {
-                u_x_star_projected[i] =  -F_max[i];
+                u_x_star_projected[i] =  -Q_max[i];
             }
-            else if (u_x_star[i] > F_max[i])
+            else if (u_x_star[i] > Q_max[i])
             {
-                u_x_star_projected[i] = F_max[i];
+                u_x_star_projected[i] = Q_max[i];
             }
             else
             {
@@ -113,15 +113,16 @@ public:
     // }
 
 
-    double getTorqueOnPositionControl(double & f_ext_from_sensor, double& q_frome_sensor) override
+    Eigen::Vector2d getTorqueOnPositionControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
     {
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
+        q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/dt);
         cout << "f[frame " << frame << "] = " << f[frame].transpose() << endl;
         cout << "q[frame " << frame << "] = " << q_s[frame].transpose() << endl;
-        model.getJacobianMatrixTwoDOF(q_from_robot, jacobian_now);
+        model.getJacobianMatrixTwoDOF(q_frome_sensor, jacobian_now);
         //update q and f_ext , get them from sensor
-        tau_ext.push_back(jacobian_now.transpose() * f_from_sensor);
+        tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
 
         Eigen::Matrix2d K_hat = K + B / dt + L * dt;
         // get new u_x_star
@@ -150,7 +151,8 @@ public:
 
         // get new q_star
         Eigen::Vector2d q_star_tem;
-        q_star_tem = q_s[frame] + (phi_b[frame] - phi_a[frame]) * (K_hat + M / (dt * dt)).inverse();
+        //q_star_tem = q_s[frame] + (phi_b[frame] - (K_hat + M / (dt * dt)).inverse() * phi_a[frame]);
+        q_star_tem = q_s[frame] + (K_hat + M / (dt * dt)).inverse() * (phi_b[frame] - phi_a[frame]);
         q_s_star.push_back(q_star_tem);
 
         // get new tau_star
@@ -179,15 +181,15 @@ public:
         q_x.push_back(q_x_tem);
 
         //get new u_x
-        double u_x_tem;
+        Eigen::Vector2d u_x_tem;
         u_x_tem = (q_x[frame] - q_x[frame - 1]) / dt;
         u_x.push_back(u_x_tem);
 
-        double q_x_hat_tem = (q_x[frame] - q_x[frame - 1]) / dt;
+        Eigen::Vector2d q_x_hat_tem = (q_x[frame] - q_x[frame - 1]) / dt;
         q_x_hat.push_back(q_x_hat_tem);
 
         // get new a
-        double a_tem;
+        Eigen::Vector2d a_tem;
         a_tem = a[frame - 1] + dt * (q_x[frame] - q_s[frame]);
         a.push_back(a_tem);
 

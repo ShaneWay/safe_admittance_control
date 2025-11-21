@@ -5,12 +5,12 @@
 
 class KikuuweController : public BaseController {
 public:
-    KikuuweController(const Config& config) : BaseController(config)
+    KikuuweController(const ConfigLoader& loader) : BaseController(loader)
     {
 
     }
 
-    double getTorqueOnForceControl(double & f_ext_from_sensor, double& q_frome_sensor) override
+    Eigen::Vector2d getTorqueOnForceControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
     {
       
     }
@@ -21,15 +21,16 @@ public:
     }
 
 
-    double getTorqueOnPositionControl(double & f_ext_from_sensor, double& q_frome_sensor) override
+    Eigen::Vector2d getTorqueOnPositionControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d & q_frome_sensor) override
     {
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
+        q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/dt);
         cout << "f[frame " << frame << "] = " << f[frame].transpose() << endl;
         cout << "q[frame " << frame << "] = " << q_s[frame].transpose() << endl;
-        model.getJacobianMatrixTwoDOF(q_from_robot, jacobian_now);
+        model.getJacobianMatrixTwoDOF(q_frome_sensor, jacobian_now);
         //update q and f_ext , get them from sensor
-        tau_ext.push_back(jacobian_now.transpose() * f_from_sensor);
+        tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
         
         Eigen::Matrix2d K_hat = K + B / dt + L * dt;
         // get new u_x_star
@@ -47,7 +48,7 @@ public:
 
         // get new phi a
         Eigen::Vector2d phi_a_tem;
-        phi_a_tem = M * (q_s[frame] - q_x[frame - 1] - T * u_x[frame - 1]) / (dt * dt);
+        phi_a_tem = M * (q_s[frame] - q_x[frame - 1] - dt * u_x[frame - 1]) / (dt * dt);
         phi_a.push_back(phi_a_tem);
 
         // get new q_star
@@ -56,8 +57,8 @@ public:
         q_s_star.push_back(q_s_star_tem);
 
         // get mat1 and mat2
-        Eigen::Matrix2d  = Eigen::Matrix2d::Identity() + (M_x + B_x * dt).inverse() * K_x * (dt * dt);
-        Eigen::Matrix2d = K_hat + M / (dt * dt);
+        Eigen::Matrix2d  Mat1 = Eigen::Matrix2d::Identity() + (M_x + B_x * dt).inverse() * K_x * (dt * dt);
+        Eigen::Matrix2d  Mat2 = K_hat + M / (dt * dt);
 
         // get new tau_star
         Eigen::Vector2d tau_star_tem;
