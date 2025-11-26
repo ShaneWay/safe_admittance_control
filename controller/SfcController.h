@@ -31,13 +31,13 @@ public:
         //update q and f_ext , get them from sensor
         tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
 
-        int n = 3;
+        int n = 5;
         Eigen::Vector2d tem = (q_x_hat[frame - 1] - q0_dot[frame - 1]);
         Eigen::Vector2d tem_abs = (q_x_hat[frame - 1] - q0_dot[frame - 1]).array().abs();
-        Eigen::Vector2d tem_abs_pow = tem_abs.matrix();
+        Eigen::Vector2d tem_abs_pow = tem_abs.array().pow(n-1).matrix();
 
         // Eigen::Vector2d q_x_hat_hat = q0_ddot[frame] + M_x.inverse() * (tau_ext[frame] - B_x * tem )* (q_x_hat[frame - 1] - q0_dot[frame - 1]) + K_x * (q_x[frame - 1] - q0[frame - 1]);
-        Eigen::Vector2d q_x_hat_hat = q0_ddot[frame] + M_x.inverse() *( tau_ext[frame] - B_x * tem_abs_pow.cwiseProduct(tem)+ K_x * (q_x[frame - 1] - q0[frame - 1]) );
+        Eigen::Vector2d q_x_hat_hat = q0_ddot[frame] + M_x.inverse() *(tau_ext[frame]-B_x * tem_abs_pow.cwiseProduct(tem) - K_x * (q_x[frame - 1] - q0[frame - 1]) );
         q_x_hat.push_back(q_x_hat[frame - 1] + q_x_hat_hat * dt);
         q_x.push_back(q_x[frame - 1] + q_x_hat[frame] * dt);
 

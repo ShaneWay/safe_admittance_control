@@ -33,7 +33,8 @@ class BaseController {
 
         Eigen::Vector2d init_angle;
         Eigen::Vector2d init_pos;
-        double omiga;
+        double omega;
+        double sin_T;
         double amplitude;
         double x_amplitude;
 

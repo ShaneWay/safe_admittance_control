@@ -27,13 +27,13 @@ BaseController::BaseController(const ConfigLoader& loader)
 
     init_angle = loader.getVector2d(robot["init_angle"]);
     init_pos = loader.getVector2d(robot["init_pos"]);
-    omiga = robot["omega"].as<double>();;
+    sin_T = robot["sin_T"].as<double>();;
     amplitude = robot["amplitude"].as<double>();;
     x_amplitude = robot["x_amplitude"].as<double>();;
 
     init_angle[0] = init_angle[0] / 180. * M_PI;
     init_angle[1] = init_angle[1] / 180. * M_PI;
-    omiga = 2 * M_PI / omiga;
+    omega = 2 * M_PI / sin_T;
 
     q0.push_back(init_angle);
     q0_dot.push_back(Eigen::Vector2d::Zero());
@@ -153,35 +153,36 @@ void BaseController::generateJointTrajectory()
     
     double t;
     int count_total = SimTime / dt + 1;
+    int flat_count = count_total - sin_T / 4 / dt;
     // std::cout << "count_total" << count_total << std::endl;
     for (time_count = 0; time_count < count_total; time_count++ )
     {
 
         t = time_count * dt;
-        if(time_count < 10501)
+        if(time_count < flat_count)
         {
             X_0_tem[0] = x_amplitude * t + init_pos[0];
-            X_0_tem[1] = amplitude * sin(omiga * t) + init_pos[1];
+            X_0_tem[1] = amplitude * sin(omega * t) + init_pos[1];
 
             X_0_dot_tem[0] = x_amplitude;
-            X_0_dot_tem[1] = 1.0 * amplitude * omiga * cos(omiga * t);
+            X_0_dot_tem[1] = 1.0 * amplitude * omega * cos(omega * t);
 
             X_0_ddot_tem[0] = 0.;
-            X_0_ddot_tem[1] = - 1.0 * amplitude * omiga * omiga * sin(omiga * t);
+            X_0_ddot_tem[1] = - 1.0 * amplitude * omega * omega * sin(omega * t);
 
-            // X_0_tem[0] = 0.1 * sin(omiga * t) + init_pos[0];
-            // X_0_tem[1] = 0 * amplitude * sin(omiga * t) + init_pos[1];
+            // X_0_tem[0] = 0.1 * sin(omega * t) + init_pos[0];
+            // X_0_tem[1] = 0 * amplitude * sin(omega * t) + init_pos[1];
         
-            // X_0_dot_tem[0] = 0.1 * omiga * cos(omiga * t);
+            // X_0_dot_tem[0] = 0.1 * omega * cos(omega * t);
             // X_0_dot_tem[1] = 0.;
 
-            // X_0_ddot_tem[0] = -0.1 * omiga * omiga * sin(omiga * t);
+            // X_0_ddot_tem[0] = -0.1 * omega * omega * sin(omega * t);
             // X_0_ddot_tem[1] = 0.;
         }
         else
         {
-            X_0_tem[0] = X0[10500][0];
-            X_0_tem[1] = X0[10500][1];
+            X_0_tem[0] = X0[flat_count - 1][0];
+            X_0_tem[1] = X0[flat_count - 1][1];
         }
 
         // update x_0, x_0_dot, x_0_ddot
@@ -432,7 +433,7 @@ void BaseController::plotJointSpeed()
 
     plt::title("q_s_hat");
     plt::xlabel("Time (us)");
-    plt::ylabel("omiga (rad / s)");
+    plt::ylabel("omega (rad / s)");
     plt::legend();
     plt::save("JointSpeed.pdf");
 }
@@ -483,7 +484,7 @@ void BaseController::plotCartesianSpeed()
 
     plt::title("X_s_hat");
     plt::xlabel("Time (us)");
-    plt::ylabel("omiga (rad / s)");
+    plt::ylabel("omega (rad / s)");
     plt::legend();
     plt::save("CartesianSpeed.pdf");
 }

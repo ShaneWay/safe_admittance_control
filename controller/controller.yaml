@@ -1,7 +1,7 @@
 robot:
   init_angle: [-53.0, 122.0]
   init_pos: [0.43, -0.126]
-  omega: 12.0
+  sin_T: 6
   amplitude: 0.15
   x_amplitude: 0.005
 
@@ -12,12 +12,12 @@ controller:
     - [0, 1.0]
     
   B_x: 
-    - [1.5, 0]
-    - [0, 1.5]
+    - [5, 0]
+    - [0, 5]
 
   K_x: 
-    - [20.0, 0]
-    - [0, 20.0]
+    - [10.0, 0]
+    - [0, 10.0]
 
   K:
     - [800.0, 0]
@@ -35,16 +35,16 @@ controller:
     - [0.5, 0]
     - [0, 0.5]
 
-  F_max: [5.0, 5.0]
-  Q_max: [0.2, 0.2]
+  F_max: [10.0, 10.0]
+  Q_max: [0.15, 0.15]
 
   f_d_tem: [0, 0]
 
   dt: 0.002
-  SimTime: 30.0
+  SimTime: 12.0
 
 
-  controller_name: "sfc"
+  controller_name: "kik"
   control_target: "position"
 
   
