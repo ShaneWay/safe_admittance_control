@@ -10,14 +10,35 @@ public:
 
     }
 
-    Eigen::Vector2d getTorqueOnForceControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
+    Eigen::Vector2d getTorqueOnForceControl(Eigen::Vect or2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
     {
+        f.push_back(f_ext_from_sensor);
+        q_s.push_back(q_frome_sensor);
+        q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/dt);
+        cout << "f[frame " << frame << "] = " << f[frame] << endl;
+        cout << "q[frame " << frame << "] = " << q_s[frame] << endl;
+    
+        Eigen::Vector2d  a_tem = M_x.inverse() * (f[frame] + f_d[frame - 1] - B_x * std::abs(q_x_hat[frame - 1]) * std::abs(q_x_hat[frame -   1]) * q_x_hat[frame -1]);
+        a.push_back(a_tem);
+        Eigen::Vector2d  q_x_hat_tem = q_x_hat[frame - 1] + a[frame] * dt;
+        q_x_hat.push_back(q_x_hat_tem);
 
+        Eigen::Vector2d  q_x_tem = q_x[frame - 1] + dt * q_x_hat[frame];
+        q_x.push_back(q_x_tem);
+
+        Eigen::Vector2d  integral_a_tem = integral_a[frame - 1] + dt * (q_x[frame] - q_s[frame]);
+        integral_a.push_back(integral_a_tem);
+        Eigen::Vector2d  tau_star_tem = M * a[frame] + K * (q_x[frame] - q_s[frame]) + B * (q_x_hat[frame] - q_s_hat[frame])  + L * integral_a[frame];
+        tau_star.push_back(tau_star_tem);
+    
+        tau.push_back(proj(tau_star_tem));
+
+        return tau[frame];
     }
 
     void refreshOnForceControl() override
     {
-
+        frame++;
     }
 
     Eigen::Vector2d getTorqueOnPositionControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
