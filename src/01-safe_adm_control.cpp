@@ -430,6 +430,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 eulerAngel[2] = base_feedback.base().tool_pose_theta_z() / 180. * M_PI;
 
                 f_input = commManager.getBaseForce(eulerAngel) - f_init;
+                // f_input = Eigen::Vector2d::Zero();
 
                 // cout << "f_input: " << f_input << endl;
 

@@ -21,16 +21,27 @@ public:
         model.getJacobianMatrixTwoDOF(q_frome_sensor, jacobian_now);
         //update q and f_ext , get them from sensor
         tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
+        Eigen::Vector2d f_d_joint = jacobian_now.transpose() * f_d[frame - 1];
 
         Eigen::Matrix2d K_hat = K + B / dt + L * dt;
 
-        Eigen::Vector2d u_x_star_tem = (M_x + B_x * dt).inverse() * ((M_x * q_x_hat[frame - 1]) + dt * (f[frame] + f_d[frame - 1]));
+        Eigen::Vector2d u_x_star_tem = (M_x + B_x * dt).inverse() * ((M_x * q_x_hat[frame - 1]) + dt * (tau_ext[frame] + f_d_joint));
         u_x_star.push_back(u_x_star_tem);
         // std::cout << "f_d: " << f_d[frame] << std::endl;
 
+        if(f[frame][0] > 2 || f[frame][1] > 2)
+        {
+            Q_max = Eigen::Vector2d(0.01, 0.01);
+        }
+        else
+        {
+            Q_max = Eigen::Vector2d(0.6, 0.6);
+        }
+
+
         Eigen::Vector2d q_x_star_hat = proj_Q(u_x_star_tem);
 
-        Eigen::Vector2d lamda = f[frame] + f_d[frame] - M_x * (q_x_star_hat - q_x_hat[frame - 1])/ dt - B_x * q_x_star_hat;
+        Eigen::Vector2d lamda = tau_ext[frame] + f_d_joint - M_x * (q_x_star_hat - q_x_hat[frame - 1])/ dt - B_x * q_x_star_hat;
         // std::cout << "lamda: " << lamda << std::endl;
 
         Eigen::Vector2d q_x_star_tem = q_x[frame - 1] + dt * u_x_star[frame];
@@ -54,7 +65,7 @@ public:
 
         Eigen::Matrix2d Mat = K_hat + M / (dt * dt);
 
-        Eigen::Vector2d tao_star_tem = Mat * ((q_x_star[frame] - q_s_star[frame]) - (M_x + dt * B_x).inverse() * dt * dt * lamda;
+        Eigen::Vector2d tao_star_tem = Mat * ((q_x_star[frame] - q_s_star[frame]) - (M_x + dt * B_x).inverse() * dt * dt * lamda);
     
         tau_star.push_back(tao_star_tem);
 

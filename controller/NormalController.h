@@ -17,9 +17,13 @@ public:
         cout << "f[frame " << frame << "] = " << f[frame].transpose() << endl;
         cout << "q[frame " << frame << "] = " << q_s[frame].transpose() << endl;
         q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/dt);
+        model.getJacobianMatrixTwoDOF(q_frome_sensor, jacobian_now);
+        //update q and f_ext , get them from sensor
+        tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
+        Eigen::Vector2d f_d_joint = jacobian_now.transpose() * f_d[frame - 1];
 
         Eigen::Matrix2d K_hat = K + B / dt + L * dt;
-        Eigen::Vector2d u_x_star_tem = (M_x + B_x * dt).inverse() * ((M_x * q_x_hat[frame - 1]) + dt * (f[frame] + f_d[frame - 1]));
+        Eigen::Vector2d u_x_star_tem = (M_x + B_x * dt).inverse() * ((M_x * q_x_hat[frame - 1]) + dt * (tau_ext[frame] + f_d_joint));
         u_x_star.push_back(u_x_star_tem);
 
         Eigen::Vector2d q_x_tem = q_x[frame - 1] + dt * u_x_star[frame];

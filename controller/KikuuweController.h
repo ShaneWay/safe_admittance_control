@@ -18,11 +18,17 @@ public:
         cout << "f[frame " << frame << "] = " << f[frame].transpose() << endl;
         cout << "q[frame " << frame << "] = " << q_s[frame].transpose() << endl;
 
+        model.getJacobianMatrixTwoDOF(q_frome_sensor, jacobian_now);
+        //update q and f_ext , get them from sensor
+        tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
+        Eigen::Vector2d f_d_joint = jacobian_now.transpose() * f_d[frame - 1];
+
         Eigen::Matrix2d K_hat = K + B / dt + L * dt;
 
-        Eigen::Vector2d u_x_star_tem = (M_x + B_x * dt).inverse() * ((M_x * q_x_hat[frame - 1]) + dt * (f[frame] + f_d[frame - 1]));
+        Eigen::Vector2d u_x_star_tem = (M_x + B_x * dt).inverse() * ((M_x * q_x_hat[frame - 1]) + dt * (tau_ext[frame] + f_d_joint));
         u_x_star.push_back(u_x_star_tem);
         // std::cout << "f_d: " << f_d[frame] << std::endl;
+         cout << "f_d[frame " << frame << "] = " << f_d[frame-1].transpose() << endl;
 
         Eigen::Vector2d q_x_star_tem = q_x[frame - 1] + dt * u_x_star[frame];
         // std::cout << "q_x_star: " << q_x_star_tem << std::endl;
@@ -33,6 +39,8 @@ public:
         // std::cout << "phi_b_tem: " << phi_b_tem << std::endl;
 
         Eigen::Vector2d phi_a_tem = M * (q_s[frame] - q_x[frame - 1] - dt * q_x_hat[frame - 1]) / (dt * dt);
+        // cout << "q_x[frame " << frame - 1 << "] = " << q_x[frame - 1].transpose() << endl;
+
         phi_a.push_back(phi_a_tem);
         // std::cout << "phi_a_tem: " << phi_a_tem << std::endl;
 
@@ -40,13 +48,13 @@ public:
         q_s_star.push_back(q_s_star_tem);
         // std::cout << "q_s_star: " << q_s_star_tem << std::endl;
 
-        double Mat = K_hat + M / (dt * dt);
+        Eigen::Matrix2d Mat = K_hat + M / (dt * dt);
 
         Eigen::Vector2d tao_star_tem = Mat * (q_x_star[frame] - q_s_star[frame]);
     
         tau_star.push_back(tao_star_tem);
 
-        double tau_tem = proj(tau_star[frame]);
+        Eigen::Vector2d tau_tem = proj(tau_star[frame]);
         tau.push_back(tau_tem);
 
         return tau[frame];

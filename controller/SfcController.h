@@ -10,15 +10,25 @@ public:
 
     }
 
-    Eigen::Vector2d getTorqueOnForceControl(Eigen::Vect or2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
+    Eigen::Vector2d getTorqueOnForceControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
     {
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
         q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/dt);
         cout << "f[frame " << frame << "] = " << f[frame] << endl;
         cout << "q[frame " << frame << "] = " << q_s[frame] << endl;
+
+        model.getJacobianMatrixTwoDOF(q_frome_sensor, jacobian_now);
+        //update q and f_ext , get them from sensor
+        tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
+        Eigen::Vector2d f_d_joint = jacobian_now.transpose() * f_d[frame - 1];
+
+        int n = 5;
+        Eigen::Vector2d tem = (q_x_hat[frame - 1] );
+        Eigen::Vector2d tem_abs = (q_x_hat[frame - 1] ).array().abs();
+        Eigen::Vector2d tem_abs_pow = tem_abs.array().pow(n-1).matrix();
     
-        Eigen::Vector2d  a_tem = M_x.inverse() * (f[frame] + f_d[frame - 1] - B_x * std::abs(q_x_hat[frame - 1]) * std::abs(q_x_hat[frame -   1]) * q_x_hat[frame -1]);
+        Eigen::Vector2d  a_tem = M_x.inverse() * (tau_ext[frame] + f_d_joint - B_x * tem_abs_pow.cwiseProduct(tem));
         a.push_back(a_tem);
         Eigen::Vector2d  q_x_hat_tem = q_x_hat[frame - 1] + a[frame] * dt;
         q_x_hat.push_back(q_x_hat_tem);
