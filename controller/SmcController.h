@@ -29,7 +29,7 @@ public:
         u_x_star.push_back(u_x_star_tem);
         // std::cout << "f_d: " << f_d[frame] << std::endl;
 
-        if(f[frame][0] > 2 || f[frame][1] > 2)
+        if(f[frame][0] > 5 || f[frame][1] > 5)
         {
             Q_max = Eigen::Vector2d(0.01, 0.01);
         }
@@ -87,6 +87,23 @@ public:
     
         Eigen::Vector2d a_tem = a[frame - 1]  + dt * (q_x[frame] - q_s[frame]);
         a.push_back(a_tem);
+
+        // adaptive Q_max
+        // Eigen::Vector2d vdot_abs = (q_x_star[frame] - q_x[frame] ).array().abs();
+        // Eigen::Vector2d Q_max_term = Q_max - 180000* vdot_abs * dt;
+        // for (int i = 0; i < 2; i++)
+        // {
+        //     if (Q_max_term[i] > 0.01)
+        //     {
+        //         Q_max[i] =  Q_max_term[i];
+        //     }
+        //     else
+        //     {
+        //         Q_max[i] = Q_max[i];
+        //     }
+        // }
+        // std::cout << "Q_max: " << Q_max << std::endl; 
+
 
         frame++;
     }
@@ -205,6 +222,15 @@ public:
 
         Eigen::Matrix2d h1 = Eigen::Matrix2d::Identity() + (M_x + B_x * dt ).inverse() * dt * dt * K_x;
         Eigen::Matrix2d h2 = K_hat + M / (dt * dt);
+
+        if(f[frame][0] > 2 || f[frame][1] > 2)
+        {
+            Q_max = Eigen::Vector2d(0.1, 0.1);
+        }
+        else
+        {
+            Q_max = Eigen::Vector2d(0.6, 0.6);
+        }
 
         Eigen::Vector2d q_x_lim = q_x[frame - 1] + dt * proj_Q((h1.inverse() * q_x_star[frame] - q_x[frame - 1]) / dt);
         Eigen::Vector2d lamda = (M_x + B_x * dt ) / (dt * dt) *(q_x_star[frame] - h1 * q_x_lim);

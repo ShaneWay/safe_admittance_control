@@ -23,7 +23,7 @@ public:
         tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
         Eigen::Vector2d f_d_joint = jacobian_now.transpose() * f_d[frame - 1];
 
-        int n = 5;
+        int n = 3;
         Eigen::Vector2d tem = (q_x_hat[frame - 1] );
         Eigen::Vector2d tem_abs = (q_x_hat[frame - 1] ).array().abs();
         Eigen::Vector2d tem_abs_pow = tem_abs.array().pow(n-1).matrix();

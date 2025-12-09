@@ -12,8 +12,10 @@ controller:
     - [0, 1.0]
     
   B_x: 
-    - [5, 0]
-    - [0, 5]
+    - [2, 0]
+    - [0, 2]
+    # - [800, 0]
+    # - [0, 800]
 
   K_x: 
     - [10.0, 0]
@@ -35,16 +37,16 @@ controller:
     - [0.5, 0]
     - [0, 0.5]
 
-  F_max: [5.0, 5.0]
-  Q_max: [0.6, 0.6]
+  F_max: [6.0, 6.0]
+  Q_max: [0.5, 0.5]
 
-  f_d_tem: [0.5, -3.0]
+  f_d_tem: [0.5, -5.0]
 
   dt: 0.002
   SimTime: 12.0
 
 
-  controller_name: "smc"
+  controller_name: "kik"
   control_target: "force"
 
   
