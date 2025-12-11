@@ -27,13 +27,17 @@
 #include <TransportClientTcp.h>
 #include <TransportClientUdp.h>
 
+#include "utilities.h"
+
+#include <unistd.h>
+#include <dynamics_model.h>
+
 #include <google/protobuf/util/json_util.h>
 
 #include "sriCommDefine.h"
 #include "sriCommManager.h"
 #include <ControllerFactory.h>
 
-#include "utilities.h"
 
 #if defined(_MSC_VER)
 #include <Windows.h>
@@ -47,13 +51,14 @@ namespace k_api = Kinova::Api;
 #define PORT 10000
 #define PORT_REAL_TIME 10001
 
-#define DURATION 5             // Network timeout (seconds)
+#define DURATION 2             // Network timeout (seconds)
 
-float velocity = 20.0f;         // Default velocity of the actuator (degrees per seconds)
+float velocity = 10.0f;         // Default velocity of the actuator (degrees per seconds)
 float time_duration = DURATION; // Duration of the example (seconds)
 
 // Waiting time during actions
 const auto ACTION_WAITING_TIME = std::chrono::seconds(1);
+constexpr auto TIMEOUT_DURATION = std::chrono::seconds{20};
 
 // Create closure to set finished to true after an END or an ABORT
 std::function<void(k_api::Base::ActionNotification)> 
@@ -69,6 +74,27 @@ check_for_end_or_abort(bool& finished)
         case k_api::Base::ActionEvent::ACTION_ABORT:
         case k_api::Base::ActionEvent::ACTION_END:
             finished = true;
+            break;
+        default:
+            break;
+        }
+    };
+}
+
+// Create an event listener that will set the sent reference to the exit value
+// Will set to either END or ABORT
+// Read the value of returnAction until it is set
+std::function<void(k_api::Base::ActionNotification)>
+    create_event_listener_by_ref(k_api::Base::ActionEvent& returnAction)
+{
+    return [&returnAction](k_api::Base::ActionNotification notification)
+    {
+        const auto action_event = notification.action_event();
+        switch(action_event)
+        {
+        case k_api::Base::ActionEvent::ACTION_END:
+        case k_api::Base::ActionEvent::ACTION_ABORT:
+            returnAction = action_event;
             break;
         default:
             break;
@@ -259,7 +285,7 @@ bool example_actuator_low_level_velocity_control(k_api::Base::BaseClient* base, 
                 for(int i = 0; i < actuator_count; i++)
                 {
                     // Move only the last actuator to prevent collision
-        		    if(i == actuator_count - 1)
+        		    if(i == 3)
         		    {
                         commands[i] += (0.001f * velocity);
                     	base_command.mutable_actuators(i)->set_position(fmod(commands[i], 360.0f));

@@ -59,7 +59,7 @@ int64_t GetTickUs()
 // Use finish_promise.get_future.get() to wait and get the value
 std::function<void(k_api::Base::ActionNotification)> 
     create_event_listener_by_promise(std::promise<k_api::Base::ActionEvent>& finish_promise)
-{、
+{
 
      return [&finish_promise] (k_api::Base::ActionNotification notification)
     {
