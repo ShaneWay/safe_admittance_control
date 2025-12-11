@@ -55,12 +55,13 @@ int64_t GetTickUs()
 }
 
 // Create an event listener that will set the promise action event to the exit value
-// Will set promise to either END or ABORT
+// Will set promise t                                                                                         o either END or ABORT
 // Use finish_promise.get_future.get() to wait and get the value
 std::function<void(k_api::Base::ActionNotification)> 
     create_event_listener_by_promise(std::promise<k_api::Base::ActionEvent>& finish_promise)
-{
-    return [&finish_promise] (k_api::Base::ActionNotification notification)
+{、
+
+     return [&finish_promise] (k_api::Base::ActionNotification notification)
     {
         const auto action_event = notification.action_event();
         switch(action_event)
@@ -529,8 +530,8 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     }
     
     // Set the servoing mode back to Single Level
-    // servoing_mode.set_servoing_mode(k_api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
-    // base->SetServoingMode(servoing_mode);
+    // servoing_mode.servoing_mode(k_api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
+    // base->SetServoingMode(servoing_mode);t_se
 
     // Wait for a bit
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));

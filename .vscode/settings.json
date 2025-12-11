@@ -87,6 +87,7 @@
         "locale": "cpp",
         "print": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "03-velocity_force_control": "cpp"
     }
 }
