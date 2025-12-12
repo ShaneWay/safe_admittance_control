@@ -7,7 +7,7 @@ class SmcController : public BaseController {
 private:
 
 public:
-    SmcController(const ConfigLoader& loader) : BaseController(loader)
+    SmcController(BaseParams& params, ControlState& state) : BaseController(params, state)
     {
 
     }

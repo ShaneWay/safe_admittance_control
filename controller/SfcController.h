@@ -5,7 +5,7 @@
 
 class SfcController : public BaseController {
 public:
-    SfcController(const ConfigLoader& loader) : BaseController(loader)
+    SfcController(BaseParams& params, ControlState& state) : BaseController(params, state)
     {
 
     }

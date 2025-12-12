@@ -5,7 +5,7 @@
 
 class NormalController : public BaseController {
 public:
-    NormalController(const ConfigLoader& loader) : BaseController(loader)
+    NormalController(BaseParams& params, ControlState& state) : BaseController(params, state)
     {
         
     }

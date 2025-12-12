@@ -5,7 +5,7 @@
 
 class KikuuweController : public BaseController {
 public:
-    KikuuweController(const ConfigLoader& loader) : BaseController(loader)
+    KikuuweController(BaseParams& params, ControlState& state) : BaseController(params, state)
     {
 
     }

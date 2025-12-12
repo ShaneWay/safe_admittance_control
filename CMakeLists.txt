@@ -78,6 +78,8 @@ foreach ( SRC_FILE ${EXE_LIST} )
   # ./controller/controller.cpp 
   ./controller/BaseController.cpp
   ./controller/ConfigLoader.cpp
+  ./controller/BaseParams.cpp
+  ./controller/ControlState.cpp
   ./force_sensor/sriCommATParser.cpp
   ./force_sensor/sriCommATParser.h
   ./force_sensor/sriCommCircularBuffer.cpp

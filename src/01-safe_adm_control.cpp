@@ -22,7 +22,6 @@
 #include <google/protobuf/util/json_util.h>
 
 #include <unistd.h>
-#include <dynamics_model.h>
 
 #include <ControllerFactory.h>
 
@@ -309,9 +308,11 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     double_t aver_tau_time = 0.;
     double_t aver_update_time = 0.;
 
-    KortexDynamics model;
     ConfigLoader loader("../controller/controller.yaml");
     std::string type = loader.getNode("controller")["controller_name"].as<std::string>();
+    BaseParams params(loader);
+    ControlState state(params);
+    ControllerFactory factory(params, state);
     
     auto controller = ControllerFactory::create(type, loader);
     int SimCount = controller->SimTime / controller->dt;
