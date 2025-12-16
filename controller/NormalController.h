@@ -11,7 +11,8 @@ public:
     }
 
     Eigen::Vector2d getTorqueOnForceControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
-    {
+    {   
+        std::cout << "normal ============================" << std::endl;
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
         cout << "f[frame " << frame << "] = " << f[frame].transpose() << endl;

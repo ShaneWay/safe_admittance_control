@@ -17,6 +17,7 @@ controller_name(params.controller_name),
 control_target(params.control_target),
 dt(params.dt),
 SimTime(params.SimTime),
+f_d_0(params.f_d_0),
 
 tau(state.tau),
 tau_ext(state.tau_ext),
@@ -46,8 +47,8 @@ X(state.X),
 X_hat(state.X_hat),
 X_x(state.X_x),
 jacobian_last(state.jacobian_last),
-jacobian_now(state.jacobian_now),
-{   
+jacobian_now(state.jacobian_now)
+{
     parseTarget();
 
     this->printParams();
@@ -159,7 +160,7 @@ void BaseController::generateJointTrajectory()
         /// update q0, q0_dot, q0_ddot
         state_.q0_dot.push_back(state_.jacobian_now.inverse() * state_.X0_dot[time_count + 1]);
         state_.q0.push_back(state_.q0[time_count] + params_.dt * state_.q0_dot[time_count]);
-        state_.q0_ddot.push_back(state_.jacobian_now.inverse() * (state_.X0_ddot[time_count + 1] - (state_.state_.jacobian_now - state_.jacobian_last) / params_.dt * state_.q0_dot[time_count]));
+        state_.q0_ddot.push_back(state_.jacobian_now.inverse() * (state_.X0_ddot[time_count + 1] - (state_.jacobian_now - state_.jacobian_last) / params_.dt * state_.q0_dot[time_count]));
 
         state_.jacobian_last = state_.jacobian_now;
     }

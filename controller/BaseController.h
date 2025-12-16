@@ -26,6 +26,7 @@ public:
 
     Eigen::Vector2d& F_max;
     Eigen::Vector2d& Q_max;
+    Eigen::Vector2d& f_d_0;
     double& dt;
     double& SimTime;
     std::string& controller_name;

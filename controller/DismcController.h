@@ -7,7 +7,7 @@ class DismcController : public BaseController {
 private:
 
 public:
-    DiSmcController(BaseParams& params, ControlState& state) : BaseController(params, state)
+    DismcController(BaseParams& params, ControlState& state) : BaseController(params, state)
     {
 
     }

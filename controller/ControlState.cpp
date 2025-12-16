@@ -40,16 +40,26 @@ ControlState::ControlState(const BaseParams& params): params_(params)
     
     frame = 1;
 
-    for(int i=0; i< 10000; i++)
+    for(int i=0; i< 4000; i++)
     {
         
         f_d.push_back(params_.f_d_0);
         
     }
+    for(int i = 4000; i < 8000; i++)
+    {
+        f_d.push_back(params_.f_d_1);
+
+    }
+    for(int i = 8000; i < 12000; i++)
+    {
+        f_d.push_back(params_.f_d_2);
+
+    }
 
 }
 
-void ControState::plot_tau()
+void ControlState::plot_tau()
 {
     plt::figure_size(1200, 780);
 
@@ -79,7 +89,7 @@ void ControState::plot_tau()
     plt::save("result_tao.pdf");
 }
 
-void ControState::plot_real_tau()
+void ControlState::plot_real_tau()
 {
     plt::figure_size(1200, 780);
 
@@ -109,7 +119,7 @@ void ControState::plot_real_tau()
     plt::save("real_tao.pdf");
 }
 
-void ControState::plotExternalForce()
+void ControlState::plotExternalForce()
 {
     plt::figure_size(1200, 780);
 
@@ -140,7 +150,7 @@ void ControState::plotExternalForce()
 }
 
 
-void ControState::plotJointAngle()
+void ControlState::plotJointAngle()
 {
     plt::figure_size(1200, 780);
 
@@ -200,7 +210,7 @@ void ControState::plotJointAngle()
 }
 
 
-void ControState::plotJointSpeed()
+void ControlState::plotJointSpeed()
 {   
     plt::figure_size(1200, 780);
 
@@ -229,7 +239,7 @@ void ControState::plotJointSpeed()
     plt::save("JointSpeed.pdf");
 }
 
-void ControState::plotCartesianSpeed()
+void ControlState::plotCartesianSpeed()
 {   
     plt::figure_size(1200, 780);
 
@@ -280,7 +290,7 @@ void ControState::plotCartesianSpeed()
     plt::save("CartesianSpeed.pdf");
 }
 
-void ControState::plotCartesianPosition()
+void ControlState::plotCartesianPosition()
 {
     plt::figure_size(1200, 780);
 

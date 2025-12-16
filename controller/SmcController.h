@@ -29,14 +29,62 @@ public:
         u_x_star.push_back(u_x_star_tem);
         // std::cout << "f_d: " << f_d[frame] << std::endl;
 
-        if(f[frame][0] > 5 || f[frame][1] > 5)
+        if(frame <= 2000)
+        {  
+            if(f[frame][0] > 4.0 || f[frame][1] > 4.0)
+            {
+                Q_max = Eigen::Vector2d(0.01, 0.01);
+            }
+            else
+            {
+                Q_max = Eigen::Vector2d(0.5, 0.5);
+            }  
+        }
+        if(frame > 2000 && frame <= 4000)
+        {  
+            if(f[frame][0] > 4.0 || f[frame][1] > 4.0)
+            {
+                Q_max = Eigen::Vector2d(0.0001, 0.0001);
+            }
+            else
+            {
+                Q_max = Eigen::Vector2d(0.5, 0.5);
+            }  
+        }
+
+        if(frame > 4000 && frame <= 8000)
         {
-            Q_max = Eigen::Vector2d(0.01, 0.01);
+            if(f[frame][0] > 8.0 || f[frame][1] > 8.0)
+            {
+                Q_max = Eigen::Vector2d(0.0001, 0.0001);
+            }
+            else
+            {
+                Q_max = Eigen::Vector2d(0.5, 0.5);
+            }  
+
+        }
+        if(frame > 8000 && frame <= 12000)
+        {
+            if(f[frame][0] >12.0 || f[frame][1] > 12.0)
+            {
+                Q_max = Eigen::Vector2d(0.0001, 0.0001);
+            }
+            else
+            {
+                Q_max = Eigen::Vector2d(0.5, 0.5);
+            }  
+
+        }
+
+/*         if(f[frame][0] > 15 || f[frame][1] > 15)
+        {
+            Q_max = Eigen::Vector2d(0.001, 0.001);
         }
         else
         {
             Q_max = Eigen::Vector2d(0.6, 0.6);
-        }
+        } */
 
 
         Eigen::Vector2d q_x_star_hat = proj_Q(u_x_star_tem);

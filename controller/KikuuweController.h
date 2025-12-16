@@ -12,6 +12,8 @@ public:
 
     Eigen::Vector2d getTorqueOnForceControl(Eigen::Vector2d & f_ext_from_sensor, Eigen::Vector2d& q_frome_sensor) override
     {
+        std::cout << "kik ============================" << std::endl;
+
         f.push_back(f_ext_from_sensor);
         q_s.push_back(q_frome_sensor);
         q_s_hat.push_back((q_s[frame] - q_s[frame - 1])/dt);

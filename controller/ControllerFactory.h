@@ -6,13 +6,14 @@
 #include "NormalController.h"
 #include "SfcController.h"
 #include "KikuuweController.h"
+#include "DismcController.h"
 #include <memory>
 
 class ControllerFactory {
 public:
     ControllerFactory(BaseParams& params, ControlState& state)
         : params_(params), state_(state) {}
-    std::unique_ptr<BaseController> create(const std::string& name) {
+    std::unique_ptr<BaseController> create(const std::string& type) {
         if (type == "normal") {
             return std::make_unique<NormalController>(params_, state_);
         } else if (type == "smc") {
@@ -22,12 +23,12 @@ public:
         } else if (type == "kik") {
             return std::make_unique<KikuuweController>(params_, state_);
         } else if (type == "dismc") {
-            return std::make_unique<dismcController>(params_, state_);
+            return std::make_unique<DismcController>(params_, state_);
         }
         
         
     }
 private:
     BaseParams& params_;
-        ControlState& state_;
+    ControlState& state_;
 };

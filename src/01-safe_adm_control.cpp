@@ -309,13 +309,16 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     double_t aver_update_time = 0.;
 
     ConfigLoader loader("../controller/controller.yaml");
+    std::string type0 = "normal";
+
     std::string type = loader.getNode("controller")["controller_name"].as<std::string>();
     BaseParams params(loader);
     ControlState state(params);
-    ControllerFactory factory(params, state);
+    // ControllerFactory factory(params, state);s
     
-    auto controller = ControllerFactory::create(type, loader);
-    int SimCount = controller->SimTime / controller->dt;
+    auto controller = ControllerFactory(params, state);
+    auto control = controller.create(type);
+    int SimCount = params.SimTime / params.dt;
     // controller->printParams();
     cout << "##################################" << endl;
     cout << "generate trajetory" << endl;
@@ -392,6 +395,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
 
 
         vector<double> q(7);
+        int flag = 0;
        
         // Real-time loop
         while (timer_count < SimCount)
@@ -435,9 +439,18 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // f_input = Eigen::Vector2d::Zero();
 
                 // cout << "f_input: " << f_input << endl;
+                // if (flag == 0)
+                // {
+                //     if(f_input[0] > 6 || f_input[1] > 6 )
+                //     {   
+                //         control=controller.create(type);
+                //         flag = 1;
+                //     }
+                // }
+                
 
                 begin_tau = GetTickUs();
-                tau = controller->getTorque(f_input, q_input);
+                tau = control->getTorque(f_input, q_input);
                 end_tau = GetTickUs();
                 cout << "real tau: " << tau.transpose() << endl;
                 cout << "==========================================!" << endl;
@@ -479,7 +492,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 timer_count++;
                 // last = GetTickUs();
                 begin_update = GetTickUs();
-                controller->refresh();
+                control->refresh();
                 end_update = GetTickUs();
                 
                 last = GetTickUs();
@@ -498,16 +511,19 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         }
         
         sleep(1);
-        controller->plotJointAngle();
-        controller->plotCartesianPosition();
-        controller->plot_tau();
-        controller->plot_real_tau();
-        controller->plotExternalForce();
-        controller->plotCartesianSpeed();
-        controller->plotJointSpeed();
+        
         cout << "##################################" << endl;
         cout << "plot data" << endl;
         cout << "##################################\n" << endl;
+        state.plot_real_tau();
+        state.plot_tau();
+        state.plotCartesianPosition();
+        // state.plotCartesianSpeed();
+        state.plotJointAngle();
+        state.plotJointSpeed();
+        state.plotExternalForce();
+        
+
         std::cout << "Torque control example completed" << std::endl;
 // 
         // Set first actuator back in position 
