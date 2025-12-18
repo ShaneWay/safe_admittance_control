@@ -29,6 +29,7 @@ public:
         model.getJacobianMatrixTwoDOF(q_frome_sensor, jacobian_now);
         //update q and f_ext , get them from sensor
         tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
+        Eigen::Vector2d f_d_joint = jacobian_now.transpose() * f_d[frame - 1];
 
         Eigen::Matrix2d h_x;
         h_x = (M_x + h * B_x).inverse() * h;
@@ -43,7 +44,7 @@ public:
         lamda_2 = (Eigen::Matrix2d::Identity() + h * Lamda_2).inverse();
 
         Eigen::Vector2d set;
-        set = -tau_ext[frame] - f_d[frame];
+        set = -tau_ext[frame] - f_d_joint;
 
         Eigen::Vector2d q1;
         q1 = lamda_1 * (q_x[frame - 1] + h* Lamda_1 * q_s[frame] + h_s * M_s * e_r[frame - 1]);

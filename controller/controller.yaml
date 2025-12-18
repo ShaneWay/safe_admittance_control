@@ -49,6 +49,6 @@ controller:
 
 
   controller_name: "dismc"
-  control_target: "position"
+  control_target: "force"
 
   
