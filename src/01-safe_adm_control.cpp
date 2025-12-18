@@ -457,9 +457,6 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
 
                 base_command.mutable_actuators(0)->set_torque_joint(tau[0]);
                 base_command.mutable_actuators(3)->set_torque_joint(tau[1]);
-
-                // base_command.mutable_actuators(1)->set_torque_joint(g[1]);
-                // base_command.mutable_actuators(3)->set_torque_joint(g[3]);
                 
                 base_command.set_frame_id(base_command.frame_id() + 1);
                 if (base_command.frame_id() > 65535)

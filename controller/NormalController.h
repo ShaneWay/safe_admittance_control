@@ -39,9 +39,12 @@ public:
         Eigen::Vector2d q_s_star_tem = q_s[frame] + (K_hat + M / (dt * dt)).inverse() * (phi_b[frame] - phi_a[frame]);
 
         Eigen::Matrix2d Mat = K_hat + M / (dt * dt);
-        Eigen::Vector2d tau_tem = Mat * (q_x[frame] - q_s_star_tem);
-        tau.push_back(proj(tau_tem));
+        Eigen::Vector2d tau_star_tem = Mat * (q_x[frame] - q_s_star_tem);
+        tau_star.push_back(tau_star_tem);
 
+        Eigen::Vector2d tau_tem;
+        tau_tem = proj(tau_star_tem);
+        tau.push_back(tau_tem);
         return tau[frame];
     }
 
@@ -53,6 +56,14 @@ public:
 
         Eigen::Vector2d a_tem = a[frame - 1]  + dt * (q_x[frame] - q_s[frame]);
         a.push_back(a_tem);
+
+        u_x.push_back(Eigen::Vector2d::Zero());
+        q_x_star.push_back(Eigen::Vector2d::Zero());
+        q_s_star.push_back(Eigen::Vector2d::Zero());
+
+        integral_a.push_back(Eigen::Vector2d::Zero());
+        e_q.push_back(Eigen::Vector2d::Zero());
+        e_r.push_back(Eigen::Vector2d::Zero());
 
         frame++;
     }

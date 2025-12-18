@@ -29,6 +29,9 @@ public:
     vv2d a;
     vv2d integral_a;
 
+    vv2d e_q;
+    vv2d e_r;
+
     int32_t frame;
     vv2d f;
     vv2d f_d;

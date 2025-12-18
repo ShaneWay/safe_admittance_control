@@ -33,6 +33,9 @@ ControlState::ControlState(const BaseParams& params): params_(params)
     q_s.push_back(params_.init_angle);
     q_s_hat.push_back(Eigen::Vector2d::Zero());
 
+    e_q.push_back(Eigen::Vector2d::Zero());
+    e_r.push_back(Eigen::Vector2d::Zero());
+
     a.push_back(Eigen::Vector2d::Zero());
     integral_a.push_back(Eigen::Vector2d::Zero());
 
@@ -360,4 +363,100 @@ void ControlState::plotCartesianPosition()
     plt::title("Cartesian Position");
     plt::legend();
     plt::save("CartesianPosition.pdf");
+}
+
+void ControlState::saveData()
+{
+    int count_total = params_.SimTime / params_.dt;
+.
+    ofstream outfile_q0("1-q0.txt", ios::out);
+    ofstream outfile_q("2-q_s.txt", ios::out);
+    ofstream outfile_q_x("3-q_x.txt", ios::out);
+
+    ofstream outfile_tau("4-tau.txt", ios::out);
+    ofstream outfile_tau_star("5-tau_star.txt", ios::out);
+    ofstream outfile_f_ext("6-f_ext.txt", ios::out);
+
+    ofstream outfile_X0("7-X0.txt", ios::out);
+    ofstream outfile_X("8-X.txt", ios::out);
+    ofstream outfile_X_d("9-X_d.txt", ios::out);
+
+    ofstream outfile_JointForce("10-ExternalJointForce.txt", ios::out);
+    ofstream outfile_q_s_hat("11-q_s_hat.txt", ios::out);
+    ofstream outfile_q_x_hat("12-q_x_hat.txt", ios::out);
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_JointForce << tau_ext[i][0] << " "  << tau_ext[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_q_s_hat << q_s_hat[i][0] << " " << q_s_hat[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_q_x_hat << q_x_hat[i][0] << " " << q_x_hat[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_q0 << q0[i][0] << " "  << q0[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_q << q[i][0] << " "  << q[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_q_x << q_x[i][0] << " "  << q_x[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_tau << tau[i][0] << " "  << tau[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_tau_star << tau_star[i][0] << " "  << tau_star[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_f_ext << f[i][0] << " "  << f_ext[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_X0 << X0[i][0] << " "  << X0[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_X << X[i][0] << " "  << X[i][1] << '\n';
+    }
+
+    for (int i = 0; i < count_total; i++)
+    {
+        outfile_X_d << X_d[i][0] << " "  << X_d[i][1] << '\n';
+    }
+
+    outfile_q0.close();
+    outfile_q.close();
+    outfile_q_x.close();
+    outfile_tau.close();
+    outfile_tau_star.close();
+    outfile_f_ext.close();
+    outfile_X0.close();
+    outfile_X.close();
+    outfile_X_d.close();
+    outfile_JointForce.close();
+    outfile_q_s_hat.close();
+    outfile_q_x_hat.close();
+
+
 }
