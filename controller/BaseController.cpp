@@ -47,7 +47,9 @@ X(state.X),
 X_hat(state.X_hat),
 X_x(state.X_x),
 jacobian_last(state.jacobian_last),
-jacobian_now(state.jacobian_now)
+jacobian_now(state.jacobian_now),
+e_r(state.e_r),
+e_q(state.e_q)
 {
     parseTarget();
 

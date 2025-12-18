@@ -6,7 +6,7 @@
 #include <vector>
 #include <BaseParams.h>
 #include <kinematics_model.h>
-
+#include <fstream>
 
 
 using namespace std;
@@ -59,6 +59,8 @@ public:
     void plotCartesianPosition();
     void plotGeneratedTrajectory();
     void generateJointTrajectory();
+    void saveData();
+    
 
     private:
         const BaseParams& params_;

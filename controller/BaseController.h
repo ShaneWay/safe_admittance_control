@@ -69,6 +69,9 @@ public:
     vv2d& X_hat;
     vv2d& X_x;
 
+    vv2d& e_r;
+    vv2d& e_q;
+
     Eigen::Matrix2d& jacobian_last;
     Eigen::Matrix2d& jacobian_now;
 

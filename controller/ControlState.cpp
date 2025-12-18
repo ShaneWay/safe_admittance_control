@@ -1,6 +1,7 @@
 #include <ControlState.h>
 #include "matplotlibcpp.h"
 
+
 namespace plt = matplotlibcpp;
 
 ControlState::ControlState(const BaseParams& params): params_(params)
@@ -368,9 +369,9 @@ void ControlState::plotCartesianPosition()
 void ControlState::saveData()
 {
     int count_total = params_.SimTime / params_.dt;
-.
+
     ofstream outfile_q0("1-q0.txt", ios::out);
-    ofstream outfile_q("2-q_s.txt", ios::out);
+    ofstream outfile_q_s("2-q_s.txt", ios::out);
     ofstream outfile_q_x("3-q_x.txt", ios::out);
 
     ofstream outfile_tau("4-tau.txt", ios::out);
@@ -379,7 +380,7 @@ void ControlState::saveData()
 
     ofstream outfile_X0("7-X0.txt", ios::out);
     ofstream outfile_X("8-X.txt", ios::out);
-    ofstream outfile_X_d("9-X_d.txt", ios::out);
+    ofstream outfile_X_x("9-X_d.txt", ios::out);
 
     ofstream outfile_JointForce("10-ExternalJointForce.txt", ios::out);
     ofstream outfile_q_s_hat("11-q_s_hat.txt", ios::out);
@@ -407,7 +408,7 @@ void ControlState::saveData()
 
     for (int i = 0; i < count_total; i++)
     {
-        outfile_q << q[i][0] << " "  << q[i][1] << '\n';
+        outfile_q_s << q_s[i][0] << " "  << q_s[i][1] << '\n';
     }
 
     for (int i = 0; i < count_total; i++)
@@ -427,7 +428,7 @@ void ControlState::saveData()
 
     for (int i = 0; i < count_total; i++)
     {
-        outfile_f_ext << f[i][0] << " "  << f_ext[i][1] << '\n';
+        outfile_f_ext << f[i][0] << " "  << f[i][1] << '\n';
     }
 
     for (int i = 0; i < count_total; i++)
@@ -442,18 +443,18 @@ void ControlState::saveData()
 
     for (int i = 0; i < count_total; i++)
     {
-        outfile_X_d << X_d[i][0] << " "  << X_d[i][1] << '\n';
+        outfile_X_x << X_x[i][0] << " "  << X_x[i][1] << '\n';
     }
 
     outfile_q0.close();
-    outfile_q.close();
+    outfile_q_s.close();
     outfile_q_x.close();
     outfile_tau.close();
     outfile_tau_star.close();
     outfile_f_ext.close();
     outfile_X0.close();
     outfile_X.close();
-    outfile_X_d.close();
+    outfile_X_x.close();
     outfile_JointForce.close();
     outfile_q_s_hat.close();
     outfile_q_x_hat.close();

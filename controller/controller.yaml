@@ -48,7 +48,7 @@ controller:
   SimTime: 24.0
 
 
-  controller_name: "smc"
-  control_target: "force"
+  controller_name: "dismc"
+  control_target: "position"
 
   

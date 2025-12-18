@@ -5,9 +5,12 @@
 
 class DismcController : public BaseController {
 private:
-    Eigen::Matrix2d M_s << 2.5, 0., 0., 2.5;
-    
-    Eigen::Matrix2d D_s << 5., 0., 0., 5.;
+    Eigen::Matrix2d M_s      = 2.5  * Eigen::Matrix2d::Identity();
+    Eigen::Matrix2d D_s      = 5.0  * Eigen::Matrix2d::Identity();
+    Eigen::Matrix2d Lamda_1  = 20.0 * Eigen::Matrix2d::Identity();
+    Eigen::Matrix2d Lamda_2  = 40.0 * Eigen::Matrix2d::Identity();
+
+    Eigen::Vector2d F0 = 4.52 * Eigen::Vector2d::Identity();
 
     double h = dt;
 
@@ -28,7 +31,7 @@ public:
         tau_ext.push_back(jacobian_now.transpose() * f_ext_from_sensor);
 
         Eigen::Matrix2d h_x;
-        h_x = (M_x + h * D_x).inverse() * h;
+        h_x = (M_x + h * B_x).inverse() * h;
 
         Eigen::Matrix2d h_s;
         h_s = (M_s + h * D_s).inverse() * h;
@@ -99,7 +102,7 @@ public:
         q_x_hat.push_back(q_x_hat_tem);
 
         Eigen::Vector2d e_q_tem;
-        e_q_tem = q_x[frame] - q[frame];
+        e_q_tem = q_x[frame] - q_s[frame];
         e_q.push_back(e_q_tem);
 
         Eigen::Vector2d e_r_tem;
@@ -123,7 +126,7 @@ public:
         
 
         Eigen::Matrix2d h_x;
-        h_x = (M_x + h * D_x).inverse() * h;
+        h_x = (M_x + h * B_x).inverse() * h;
 
         Eigen::Matrix2d h_s;
         h_s = (M_s + h * D_s).inverse() * h;
@@ -135,7 +138,7 @@ public:
         lamda_2 = (Eigen::Matrix2d::Identity() + h * Lamda_2).inverse();
 
         Eigen::Vector2d set;
-        set = -tau_ext[frame] - (M_x * q0_ddot[frame] + D_x * q0_dot[frame] + K_x * q0[frame]);
+        set = -tau_ext[frame] - (M_x * q0_ddot[frame] + B_x * q0_dot[frame] + K_x * q0[frame]);
 
         Eigen::Matrix2d h_x_star;
         h_x_star = (Eigen::Matrix2d::Identity() + h * h_x * K_x).inverse();
@@ -198,7 +201,7 @@ public:
         q_x_hat.push_back(q_x_hat_tem);
 
         Eigen::Vector2d e_q_tem;
-        e_q_tem = q_x[frame] - q[frame];
+        e_q_tem = q_x[frame] - q_s[frame];
         e_q.push_back(e_q_tem);
 
         Eigen::Vector2d e_r_tem;
