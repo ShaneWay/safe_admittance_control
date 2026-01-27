@@ -28,7 +28,7 @@ public:
         Eigen::Vector2d tem_abs = (q_x_hat[frame - 1] ).array().abs();
         Eigen::Vector2d tem_abs_pow = tem_abs.array().pow(n-1).matrix();
     
-        Eigen::Vector2d  a_tem = M_x.inverse() * (tau_ext[frame] + f_d_joint - B_x * tem_abs_pow.cwiseProduct(tem));
+        Eigen::Vector2d  a_tem = M_x.inverse() * (tau_ext[frame] + f_d_joint - B_x_sfc * tem_abs_pow.cwiseProduct(tem));
         a.push_back(a_tem);
         Eigen::Vector2d  q_x_hat_tem = q_x_hat[frame - 1] + a[frame] * dt;
         q_x_hat.push_back(q_x_hat_tem);
@@ -67,8 +67,8 @@ public:
         Eigen::Vector2d tem_abs = (q_x_hat[frame - 1] - q0_dot[frame - 1]).array().abs();
         Eigen::Vector2d tem_abs_pow = tem_abs.array().pow(n-1).matrix();
 
-        // Eigen::Vector2d q_x_hat_hat = q0_ddot[frame] + M_x.inverse() * (tau_ext[frame] - B_x * tem )* (q_x_hat[frame - 1] - q0_dot[frame - 1]) + K_x * (q_x[frame - 1] - q0[frame - 1]);
-        Eigen::Vector2d q_x_hat_hat = q0_ddot[frame] + M_x.inverse() *(tau_ext[frame]-B_x * tem_abs_pow.cwiseProduct(tem) - K_x * (q_x[frame - 1] - q0[frame - 1]) );
+        // Eigen::Vector2d q_x_hat_hat = q0_ddot[frame] + M_x.inverse() * (tau_ext[frame] - B_x_sfc * tem )* (q_x_hat[frame - 1] - q0_dot[frame - 1]) + K_x * (q_x[frame - 1] - q0[frame - 1]);
+        Eigen::Vector2d q_x_hat_hat = q0_ddot[frame] + M_x.inverse() *(tau_ext[frame]-B_x_sfc * tem_abs_pow.cwiseProduct(tem) - K_x * (q_x[frame - 1] - q0[frame - 1]) );
         q_x_hat.push_back(q_x_hat[frame - 1] + q_x_hat_hat * dt);
         q_x.push_back(q_x[frame - 1] + q_x_hat[frame] * dt);
 

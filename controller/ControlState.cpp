@@ -1,5 +1,8 @@
 #include <ControlState.h>
 #include "matplotlibcpp.h"
+#include <experimental/filesystem>
+
+namespace fs = std::experimental::filesystem;
 
 
 namespace plt = matplotlibcpp;
@@ -369,22 +372,25 @@ void ControlState::plotCartesianPosition()
 void ControlState::saveData()
 {
     int count_total = params_.SimTime / params_.dt;
+    string save_path = "data/"+params_.controller_name + "_" + params_.control_target;
 
-    ofstream outfile_q0("1-q0.txt", ios::out);
-    ofstream outfile_q_s("2-q_s.txt", ios::out);
-    ofstream outfile_q_x("3-q_x.txt", ios::out);
+    fs::create_directories(save_path);
 
-    ofstream outfile_tau("4-tau.txt", ios::out);
-    ofstream outfile_tau_star("5-tau_star.txt", ios::out);
-    ofstream outfile_f_ext("6-f_ext.txt", ios::out);
+    ofstream outfile_q0(save_path+"/1-q0.txt", ios::out);
+    ofstream outfile_q_s(save_path+"/2-q_s.txt", ios::out);
+    ofstream outfile_q_x(save_path+"/3-q_x.txt", ios::out);
 
-    ofstream outfile_X0("7-X0.txt", ios::out);
-    ofstream outfile_X("8-X.txt", ios::out);
-    ofstream outfile_X_x("9-X_d.txt", ios::out);
+    ofstream outfile_tau(save_path+"/4-tau.txt", ios::out);
+    ofstream outfile_tau_star(save_path+"/5-tau_star.txt", ios::out);
+    ofstream outfile_f_ext(save_path+"/6-f_ext.txt", ios::out);
 
-    ofstream outfile_JointForce("10-ExternalJointForce.txt", ios::out);
-    ofstream outfile_q_s_hat("11-q_s_hat.txt", ios::out);
-    ofstream outfile_q_x_hat("12-q_x_hat.txt", ios::out);
+    ofstream outfile_X0(save_path+"/7-X0.txt", ios::out);
+    ofstream outfile_X(save_path+"/8-X.txt", ios::out);
+    ofstream outfile_X_x(save_path+"/9-X_d.txt", ios::out);
+
+    ofstream outfile_JointForce(save_path+"/10-tau_ext.txt", ios::out);
+    ofstream outfile_q_s_hat(save_path+"/11-q_s_hat.txt", ios::out);
+    ofstream outfile_q_x_hat(save_path+"/12-q_x_hat.txt", ios::out);
 
     for (int i = 0; i < count_total; i++)
     {

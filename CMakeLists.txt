@@ -107,6 +107,7 @@ foreach ( SRC_FILE ${EXE_LIST} )
   Python3::Python
   Python3::Module
   yaml-cpp
+  stdc++fs
   )
 
   if(Python3_NumPy_FOUND)

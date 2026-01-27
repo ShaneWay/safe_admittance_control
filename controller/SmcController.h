@@ -77,7 +77,7 @@ public:
 
         }
 
-/*         if(f[frame][0] > 15 || f[frame][1] > 15)
+/*         if(f[frame][0] > 2 || f[frame][1] > 2)
         {
             Q_max = Eigen::Vector2d(0.001, 0.001);
         }
@@ -271,13 +271,13 @@ public:
         Eigen::Matrix2d h1 = Eigen::Matrix2d::Identity() + (M_x + B_x * dt ).inverse() * dt * dt * K_x;
         Eigen::Matrix2d h2 = K_hat + M / (dt * dt);
 
-        if(f[frame][0] > 2 || f[frame][1] > 2)
+        if(f[frame][0] > 6 || f[frame][1] > 6)
         {
-            Q_max = Eigen::Vector2d(0.1, 0.1);
+            Q_max = Eigen::Vector2d(0.001, 0.001);
         }
         else
         {
-            Q_max = Eigen::Vector2d(0.6, 0.6);
+            Q_max = Eigen::Vector2d(1.0, 1.0);
         }
 
         Eigen::Vector2d q_x_lim = q_x[frame - 1] + dt * proj_Q((h1.inverse() * q_x_star[frame] - q_x[frame - 1]) / dt);

@@ -315,9 +315,15 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
     BaseParams params(loader);
     ControlState state(params);
     // ControllerFactory factory(params, state);s
-    
+    std::unique_ptr<BaseController> control;
     auto controller = ControllerFactory(params, state);
-    auto control = controller.create(type);
+    if(params.control_target == "position")
+    {
+        control = controller.create(type);
+    }else{
+
+        control = controller.create(type0);
+    }
     int SimCount = params.SimTime / params.dt;
     // controller->printParams();
     cout << "##################################" << endl;
@@ -439,16 +445,18 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
                 // f_input = Eigen::Vector2d::Zero();
 
                 // cout << "f_input: " << f_input << endl;
-                // if (flag == 0)
-                // {
-                //     if(f_input[0] > 6 || f_input[1] > 6 )
-                //     {   
-                //         control=controller.create(type);
-                //         flag = 1;
-                //     }
-                // }
+                if(params.control_target != "position")
+                {
+                    if (flag == 0)
+                    {
+                        if(f_input[0] > 6 || f_input[1] > 6 )
+                        {   
+                            control=controller.create(type);
+                            flag = 1;
+                        }
+                    }
+                }
                 
-
                 begin_tau = GetTickUs();
                 tau = control->getTorque(f_input, q_input);
                 end_tau = GetTickUs();
@@ -519,6 +527,7 @@ bool cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyclic::Bas
         state.plotJointAngle();
         state.plotJointSpeed();
         state.plotExternalForce();
+        state.saveData();
         
 
         std::cout << "Torque control example completed" << std::endl;

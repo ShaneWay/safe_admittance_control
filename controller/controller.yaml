@@ -14,8 +14,10 @@ controller:
   B_x: 
     - [8, 0]
     - [0, 8]
-    # - [800, 0]
-    # - [0, 800]
+  
+  B_x_sfc:
+    - [800, 0]
+    - [0, 800]
 
   K_x: 
     - [10.0, 0]
@@ -37,18 +39,18 @@ controller:
     - [0.5, 0]
     - [0, 0.5]
 
-  F_max: [6.0, 6.0]
-  Q_max: [0.5, 0.5]
+  F_max: [12.0, 12.0]
+  Q_max: [1.0, 1.0]
 
   f_d_0: [0.5, -4.0]
   f_d_1: [0.5, -8.0]
   f_d_2: [0.5, -12.0]
 
   dt: 0.002
-  SimTime: 24.0
+  SimTime: 12.0
 
 
-  controller_name: "dismc"
-  control_target: "force"
+  controller_name: "smc"
+  control_target: "position"
 
   

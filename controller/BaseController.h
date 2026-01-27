@@ -17,6 +17,7 @@ public:
     Eigen::Matrix2d& M_x;
     Eigen::Matrix2d& B_x;
     Eigen::Matrix2d& K_x;
+    Eigen::Matrix2d& B_x_sfc;
 
     Eigen::Matrix2d& K;
     Eigen::Matrix2d& B;

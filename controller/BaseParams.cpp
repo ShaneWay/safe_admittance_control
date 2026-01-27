@@ -8,6 +8,8 @@ BaseParams::BaseParams(const ConfigLoader& loader)
     M_x = loader.getMatrix2d(ctrl["M_x"]);
     B_x = loader.getMatrix2d(ctrl["B_x"]);
     K_x = loader.getMatrix2d(ctrl["K_x"]);
+    B_x_sfc = loader.getMatrix2d(ctrl["B_x_sfc"]);
+
     K = loader.getMatrix2d(ctrl["K"]);
     B = loader.getMatrix2d(ctrl["B"]);
     L = loader.getMatrix2d(ctrl["L"]);

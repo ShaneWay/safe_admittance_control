@@ -14,6 +14,8 @@ public:
     Eigen::Matrix2d K;
     Eigen::Matrix2d B;
     Eigen::Matrix2d L;
+    Eigen::Matrix2d B_x_sfc;
+
     
     Eigen::Matrix2d M;
     Eigen::Vector2d F_max;

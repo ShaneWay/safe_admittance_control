@@ -7,6 +7,8 @@ BaseController::BaseController(BaseParams& params, ControlState& state): params_
 M_x(params.M_x),
 B_x(params.B_x),
 K_x(params.K_x),
+B_x_sfc(params.B_x_sfc),
+
 K(params.K),
 B(params.B),
 L(params.L),
