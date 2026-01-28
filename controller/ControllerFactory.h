@@ -22,6 +22,8 @@ public:
             return std::make_unique<SfcController>(params_, state_);
         } else if (type == "kik") {
             return std::make_unique<KikuuweController>(params_, state_);
+        } else if (type == "kikc") {
+            return std::make_unique<KikuuweController>(params_, state_);
         } else if (type == "dismc") {
             return std::make_unique<DismcController>(params_, state_);
         }
