@@ -47,10 +47,10 @@ controller:
   f_d_2: [0.5, -12.0]
 
   dt: 0.002
-  SimTime: 12.0
+  SimTime: 24
 
 
   controller_name: "smc"
-  control_target: "position"
+  control_target: "force"
 
   

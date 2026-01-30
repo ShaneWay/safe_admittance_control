@@ -28,7 +28,8 @@ public:
         Eigen::Matrix2d K_hat = K + B / dt + L * dt;
 
         Eigen::Vector2d u_x_star_tem = (M_x + B_x * dt).inverse() * ((M_x * q_x_hat[frame - 1]) + dt * (tau_ext[frame] + f_d_joint));
-        u_x_star.push_back(dzn_vx(u_x_star_tem));
+        // u_x_star.push_back(dzn_vx(u_x_star_tem));
+        u_x_star.push_back(u_x_star_tem);
         // std::cout << "f_d: " << f_d[frame] << std::endl;
          cout << "f_d[frame " << frame << "] = " << f_d[frame-1].transpose() << endl;
 
@@ -182,13 +183,13 @@ public:
         Eigen::Vector2d q_x_hat_projected;
         for (int i = 0; i < 2; i++)
         {
-            if (u_x_star[i] < 0)
+            if (q_x_hat_tem[i] < 0)
             {
                 q_x_hat_projected[i] = 0;
             }
-            else if (u_x_star[i] > u_x_star[frame][i])
+            else if (q_x_hat_tem[i] > u_x_star[frame][i])
             {
-                q_x_hat_projected[i] = u_x_star[[frame]][i];
+                q_x_hat_projected[i] = u_x_star[frame][i];
             }
             else
             {
