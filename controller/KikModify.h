@@ -106,18 +106,18 @@ public:
         phi_b.push_back(phi_b_tem);
 
         // get new phi a
-        Eigen::Vector2d phi_a_tem;
-        phi_a_tem = M * (q_s[frame] - q_x[frame - 1] - dt * u_x[frame - 1]) / (dt * dt);
-        phi_a.push_back(phi_a_tem);
+        Eigen::Vector2d phi_a_tem = M * (u_x_star[frame] - q_x_hat[frame - 1]) / dt;
+
+        phi_a.push_back(proj(phi_a_tem));
 
         // get new q_star
         Eigen::Vector2d q_s_star_tem;
-        q_s_star_tem = q_s[frame] + (K_hat + M / (dt * dt)).inverse() * (phi_b[frame] - phi_a[frame]);
+        q_s_star_tem = q_s[frame] + (K_hat).inverse() * (phi_b[frame] - phi_a[frame]);
         q_s_star.push_back(q_s_star_tem);
 
         // get mat1 and mat2
         Eigen::Matrix2d  Mat1 = Eigen::Matrix2d::Identity() + (M_x + B_x * dt).inverse() * K_x * (dt * dt);
-        Eigen::Matrix2d  Mat2 = K_hat + M / (dt * dt);
+        Eigen::Matrix2d  Mat2 = K_hat;
 
         // get new tau_star
         Eigen::Vector2d tau_star_tem;
@@ -138,7 +138,7 @@ public:
 
         // get new q_x
         Eigen::Vector2d q_x_tem;
-        q_x_tem = q_s_star[frame] + (K_hat + M / (dt * dt)).inverse() * tau[frame];
+        q_x_tem = q_s_star[frame] + (K_hat).inverse() * tau[frame];
         q_x.push_back(q_x_tem);
 
         //get new u_x
@@ -147,7 +147,7 @@ public:
         u_x.push_back(u_x_tem);
 
         Eigen::Vector2d q_x_hat_tem = (q_x[frame] - q_x[frame - 1]) / dt;
-        q_x_hat.push_back(q_x_hat_tem);
+        q_x_hat.push_back(proj_co(q_x_hat_tem));
 
         // get new a
         Eigen::Vector2d a_tem;
