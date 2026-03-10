@@ -93,7 +93,7 @@ public:
         
         Eigen::Matrix2d K_hat = K + B / dt + L * dt;
         // get new u_x_star
-        Eigen::Vector2d  u_x_star_tem = (M_x + B_x * dt).inverse() * (M_x * u_x[frame - 1] + dt * (M_x * q0_ddot[frame] + B_x * q0_dot[frame] + K_x * q0[frame] + tau_ext[frame])) ;
+        Eigen::Vector2d  u_x_star_tem = (M_x + B_x * dt).inverse() * (M_x * q_x_hat[frame - 1] + dt * (M_x * q0_ddot[frame] + B_x * q0_dot[frame] + K_x * q0[frame] + tau_ext[frame])) ;
         u_x_star.push_back(u_x_star_tem);
 
         // get new q_x_star
@@ -144,7 +144,7 @@ public:
         //get new u_x
         Eigen::Vector2d u_x_tem;
         u_x_tem = (q_x[frame] - q_x[frame - 1]) / dt;
-        u_x.push_back(u_x_tem);
+        u_x.push_back(proj_co(u_x_tem));
 
         Eigen::Vector2d q_x_hat_tem = (q_x[frame] - q_x[frame - 1]) / dt;
         q_x_hat.push_back(proj_co(q_x_hat_tem));
@@ -181,15 +181,17 @@ public:
      Eigen::Vector2d proj_co(Eigen::Vector2d q_x_hat_tem)
     {   
         Eigen::Vector2d q_x_hat_projected;
+        
         for (int i = 0; i < 2; i++)
         {
-            if (q_x_hat_tem[i] < 0)
+            double u_x_star_abs = std::abs(u_x_star[frame][i]);
+            if (q_x_hat_tem[i] < -u_x_star_abs)
             {
-                q_x_hat_projected[i] = 0;
+                q_x_hat_projected[i] = -u_x_star_abs;
             }
-            else if (q_x_hat_tem[i] > u_x_star[frame][i])
+            else if (q_x_hat_tem[i] >u_x_star_abs)
             {
-                q_x_hat_projected[i] = u_x_star[frame][i];
+                q_x_hat_projected[i] =u_x_star_abs;
             }
             else
             {
