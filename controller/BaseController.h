@@ -89,6 +89,10 @@ public:
         void plotGeneratedTrajectory();
         void generateJointTrajectory();
 
+        bool isImpactExperimentTarget() const;
+        void generateOriginalJointTrajectory();
+        void generateImpactExperimentTrajectory();
+
         Eigen::Vector2d proj(Eigen::Vector2d &tao_star_input);
 
     protected:

@@ -1,7 +1,60 @@
 #include <BaseController.h>
 #include "matplotlibcpp.h"
 
+#include <algorithm>
+#include <cmath>
+
 namespace plt = matplotlibcpp;
+
+namespace {
+
+Eigen::Vector2d catmullRomPosition(const Eigen::Vector2d& p0,
+                                   const Eigen::Vector2d& p1,
+                                   const Eigen::Vector2d& p2,
+                                   const Eigen::Vector2d& p3,
+                                   double u)
+{
+    const double u2 = u * u;
+    const double u3 = u2 * u;
+
+    return 0.5 * ((2.0 * p1)
+        + (-p0 + p2) * u
+        + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * u2
+        + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * u3);
+}
+
+Eigen::Vector2d catmullRomVelocity(const Eigen::Vector2d& p0,
+                                   const Eigen::Vector2d& p1,
+                                   const Eigen::Vector2d& p2,
+                                   const Eigen::Vector2d& p3,
+                                   double u,
+                                   double segment_time)
+{
+    const double u2 = u * u;
+
+    Eigen::Vector2d dPdu = 0.5 * ((-p0 + p2)
+        + 2.0 * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * u
+        + 3.0 * (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * u2);
+
+    return dPdu / segment_time;
+}
+
+Eigen::Vector2d catmullRomAcceleration(const Eigen::Vector2d& p0,
+                                       const Eigen::Vector2d& p1,
+                                       const Eigen::Vector2d& p2,
+                                       const Eigen::Vector2d& p3,
+                                       double u,
+                                       double segment_time)
+{
+    Eigen::Vector2d d2Pdu2 = 0.5 * (
+        2.0 * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3)
+        + 6.0 * (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * u);
+
+    return d2Pdu2 / (segment_time * segment_time);
+}
+
+}
+
 
 BaseController::BaseController(BaseParams& params, ControlState& state): params_(params), state_(state),
 M_x(params.M_x),
@@ -112,15 +165,114 @@ void BaseController::plotGeneratedTrajectory()
 
 void BaseController::parseTarget()
 {
-    if (control_target == "position")
+    if (control_target == "position" || isImpactExperimentTarget())
     {
         target_ = ControlTarget::PositionControl;
-    }else{
+    }
+    else
+    {
         target_ = ControlTarget::ForceControl;
     }
 }
 
+bool BaseController::isImpactExperimentTarget() const
+{
+    return control_target == "impact";
+}
+
 void BaseController::generateJointTrajectory()
+{
+    if (isImpactExperimentTarget())
+    {
+        std::cout << "Generate impact experiment trajectory." << std::endl;
+        generateImpactExperimentTrajectory();
+    }
+    else
+    {
+        std::cout << "Generate original trajectory." << std::endl;
+        generateOriginalJointTrajectory();
+    }
+}
+
+void BaseController::generateImpactExperimentTrajectory()
+{
+    sleep(2);
+
+    // 轨迹路点顺序：05 -> 04 -> 03 -> 02 -> 01
+    // 当前控制器的 X0/q0 是 Eigen::Vector2d，所以这里只生成 XY 轨迹；
+    // z 姿态不参与该 2 自由度控制器的轨迹生成。
+    std::vector<Eigen::Vector2d> waypoints;
+    waypoints.emplace_back(-0.471, 0.470);  // traj_05
+    waypoints.emplace_back(-0.354, 0.524);  // traj_04
+    waypoints.emplace_back(-0.274, 0.461);  // traj_03
+    waypoints.emplace_back(-0.123, 0.463);  // traj_02
+    waypoints.emplace_back(-0.040, 0.453);  // traj_01
+
+    const int count_total = static_cast<int>(params_.SimTime / params_.dt) + 1;
+    const int segment_num = static_cast<int>(waypoints.size()) - 1;
+    const double total_time = params_.SimTime;
+    const double segment_time = total_time / static_cast<double>(segment_num);
+
+    for (int time_count = 0; time_count < count_total; ++time_count)
+    {
+        const double t = time_count * params_.dt;
+
+        Eigen::Vector2d X_0_tem = Eigen::Vector2d::Zero();
+        Eigen::Vector2d X_0_dot_tem = Eigen::Vector2d::Zero();
+        Eigen::Vector2d X_0_ddot_tem = Eigen::Vector2d::Zero();
+
+        if (t >= total_time)
+        {
+            X_0_tem = waypoints.back();
+        }
+        else
+        {
+            const double s = t / segment_time;
+            const int seg = std::min(
+                static_cast<int>(std::floor(s)),
+                segment_num - 1
+            );
+
+            const double u = s - static_cast<double>(seg);
+
+            const Eigen::Vector2d& p0 = waypoints[std::max(seg - 1, 0)];
+            const Eigen::Vector2d& p1 = waypoints[seg];
+            const Eigen::Vector2d& p2 = waypoints[seg + 1];
+            const Eigen::Vector2d& p3 = waypoints[std::min(seg + 2, segment_num)];
+
+            X_0_tem      = catmullRomPosition(p0, p1, p2, p3, u);
+            X_0_dot_tem  = catmullRomVelocity(p0, p1, p2, p3, u, segment_time);
+            X_0_ddot_tem = catmullRomAcceleration(p0, p1, p2, p3, u, segment_time);
+        }
+
+        state_.X0.push_back(X_0_tem);
+        state_.X0_dot.push_back(X_0_dot_tem);
+        state_.X0_ddot.push_back(X_0_ddot_tem);
+
+        model.getJacobianMatrixTwoDOF(q0[time_count], state_.jacobian_now);
+
+        state_.q0_dot.push_back(
+            state_.jacobian_now.inverse() * state_.X0_dot[time_count + 1]
+        );
+
+        state_.q0.push_back(
+            state_.q0[time_count] + params_.dt * state_.q0_dot[time_count]
+        );
+
+        state_.q0_ddot.push_back(
+            state_.jacobian_now.inverse() *
+            (
+                state_.X0_ddot[time_count + 1]
+                - (state_.jacobian_now - state_.jacobian_last)
+                  / params_.dt * state_.q0_dot[time_count]
+            )
+        );
+
+        state_.jacobian_last = state_.jacobian_now;
+    }
+}
+
+void BaseController::generateOriginalJointTrajectory()
 {
     sleep(2);
     unsigned int time_count = 0;
