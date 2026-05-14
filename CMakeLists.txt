@@ -59,8 +59,12 @@ include_directories(${PROJECT_SOURCE_DIR}/include/rbdl)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-
-file(GLOB_RECURSE EXE_LIST RELATIVE ${PROJECT_SOURCE_DIR}/src "[0-9]*.cpp")
+file(GLOB_RECURSE EXE_LIST RELATIVE ${PROJECT_SOURCE_DIR}/src
+  "1*.cpp"
+  "2*.cpp"
+  "3*.cpp"
+  "4*.cpp"
+)
 
 foreach ( SRC_FILE ${EXE_LIST} )
 
