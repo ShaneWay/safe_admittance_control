@@ -3,60 +3,59 @@
 
 #include "sriCommDefine.h"
 #include "sriCommParser.h"
+#include <atomic>
 
 class CSRICommTCPClient
 {
-public:
-	CSRICommTCPClient();
-	~CSRICommTCPClient();
+  public:
+    CSRICommTCPClient();
+    ~CSRICommTCPClient();
 
-	bool OpenTCP(std::string ipRemote, int portRemote, std::string ipLocal = "", int portLocal = 0);
-	bool CloseTCP();
+    bool OpenTCP(std::string ipRemote, int portRemote, std::string ipLocal = "", int portLocal = 0);
+    bool CloseTCP();
 
-	bool Connect();
-	bool Disconnect();
-	bool ReConnect();
+    bool Connect();
+    bool Disconnect();
+    bool ReConnect();
 
-	bool OnReceivedData(BYTE* data, int dataLen);
-	bool OnSendData(BYTE* data, int dataLen);
+    bool OnReceivedData(BYTE* data, int dataLen);
+    bool OnSendData(BYTE* data, int dataLen);
 
-	bool AddCommParser(CSRICommParser* parser);
+    bool AddCommParser(CSRICommParser* parser);
 
-	bool SetNetworkFailureCallbackFunction(SRICommNetworkFailureCallbackFunction networkFailureCallback);
+    bool SetNetworkFailureCallbackFunction(SRICommNetworkFailureCallbackFunction networkFailureCallback);
 
-	std::string GetLastError();
-private:
-	std::string mIpRemote;
-	int mPortRemote;
-	std::string mIpLocal;
-	int mPortLocal;
+    std::string GetLastError();
 
+  private:
+    std::string mIpRemote;
+    int mPortRemote;
+    std::string mIpLocal;
+    int mPortLocal;
 
-	int mSocket;
-	struct sockaddr_in mLocalAddr;
-	struct sockaddr_in mRemoteAddr;
-	bool ConnectTCP();
-	bool BindLocalIP();
-	bool SetKeepAlive();
+    int mSocket;
+    struct sockaddr_in mLocalAddr;
+    struct sockaddr_in mRemoteAddr;
+    bool ConnectTCP();
+    bool BindLocalIP();
+    bool SetKeepAlive();
 
-	std::thread mThread;
-	bool mIsStopThread;
-	bool mIsTreadStoped;
-	bool OpenThread();
-	bool CloseThread();
-	void TCPClientReceiverThread(int code);
+    std::thread mThread;
+    std::atomic<bool> mIsStopThread;
+    std::atomic<bool> mIsTreadStoped;
+    bool OpenThread();
+    bool CloseThread();
+    void TCPClientReceiverThread(int code);
 
-	
-	bool CheckTimeoutError();
-	bool OnNetworkFailure();
+    bool CheckTimeoutError();
+    bool OnNetworkFailure();
 
-	std::vector<CSRICommParser*> mParserList;
+    std::vector<CSRICommParser*> mParserList;
 
-	SRICommNetworkFailureCallbackFunction mNetworkFailureCallback;
+    SRICommNetworkFailureCallbackFunction mNetworkFailureCallback;
 
-	std::string mLastError;
-	void GetLastSocketError(std::string functionName);
+    std::string mLastError;
+    void GetLastSocketError(std::string functionName);
 };
 
 #endif
-

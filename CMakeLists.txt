@@ -1,129 +1,186 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(kortex_admittance_control  LANGUAGES CXX)
+project(kortex_admittance_control LANGUAGES CXX)
 
-# Activate C++ 11
-set (CMAKE_CXX_STANDARD 14)
-find_package(Eigen3)
-find_package(yaml-cpp)
-message(${CMAKE_CXX_COMPILER})
-set(CMAKE_INCLUDE_CURRENT_DIR   ON)
-set(CMAKE_COLOR_MAKEFILE        ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-
-
-set(KORTEX_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/kortex/")
-set(RBDL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/rbdl/")
-
-message(${PROJECT_SOURCE_DIR})
-
-
-
-if(UNIX)
-  add_definitions(-D_OS_UNIX)
-elseif(WIN32)
-  add_definitions(-D_OS_WINDOWS -DNOMINMAX)
-  if(MSVC)
-     add_compile_options(/bigobj)
-  endif()
-endif()
+find_package(Eigen3 REQUIRED)
+find_package(yaml-cpp REQUIRED)
+find_package(pinocchio REQUIRED)
 
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 find_package(Python3 COMPONENTS NumPy)
 
-link_libraries(${PROJECT_SOURCE_DIR}/lib/kortex_api/libKortexApiCpp.a)
-link_libraries(pthread)
-link_libraries(${PROJECT_SOURCE_DIR}/lib/rbdl/librbdl.so)
-link_libraries(${PROJECT_SOURCE_DIR}/lib/rbdl/urdfreader/librbdl_urdfreader.so)
+message("CXX compiler: ${CMAKE_CXX_COMPILER}")
+message("Project source dir: ${PROJECT_SOURCE_DIR}")
 
-include_directories(${PROJECT_SOURCE_DIR}/include/kortex/utilities)
-include_directories(${PROJECT_SOURCE_DIR}/controller)
-include_directories(${PROJECT_SOURCE_DIR}/force_sensor)
-include_directories(${PROJECT_SOURCE_DIR}/dynamics_model)
-include_directories(${PROJECT_SOURCE_DIR}/kinematics_model)
-include_directories(${PROJECT_SOURCE_DIR}/thirdParty/cxxopts)
-include_directories(${PROJECT_SOURCE_DIR}/include/kortex)
-include_directories(${PROJECT_SOURCE_DIR}/include/kortex/client)
-include_directories(${PROJECT_SOURCE_DIR}/include/kortex/common)
-include_directories(${PROJECT_SOURCE_DIR}/include/kortex/messages)
-include_directories(${PROJECT_SOURCE_DIR}/include/kortex/client_stubs)
-include_directories(${PROJECT_SOURCE_DIR}/include/kortex/message)
-include_directories(${PROJECT_SOURCE_DIR}/include/kortex/thirdParty/include)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_COLOR_MAKEFILE ON)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/include/rbdl)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
+if(UNIX)
+    add_definitions(-D_OS_UNIX)
+elseif(WIN32)
+    add_definitions(-D_OS_WINDOWS -DNOMINMAX)
+    if(MSVC)
+        add_compile_options(/bigobj)
+    endif()
+endif()
 
-include_directories(${EIGEN3_INCLUDE_DIR})
+# ------------------------------------------------------------
+# Include directories
+# ------------------------------------------------------------
+include_directories(
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include/kortex
+    ${PROJECT_SOURCE_DIR}/include/kortex/utilities
+    ${PROJECT_SOURCE_DIR}/include/kortex/client
+    ${PROJECT_SOURCE_DIR}/include/kortex/common
+    ${PROJECT_SOURCE_DIR}/include/kortex/messages
+    ${PROJECT_SOURCE_DIR}/include/kortex/client_stubs
+    ${PROJECT_SOURCE_DIR}/include/kortex/message
+    ${PROJECT_SOURCE_DIR}/include/kortex/thirdParty/include
 
-file(GLOB_RECURSE EXE_LIST RELATIVE ${PROJECT_SOURCE_DIR}/src
-  "1*.cpp"
-  "2*.cpp"
-  "3*.cpp"
-  "4*.cpp"
+    ${PROJECT_SOURCE_DIR}/controller
+    ${PROJECT_SOURCE_DIR}/robot_control
+    ${PROJECT_SOURCE_DIR}/force_sensor
+    ${PROJECT_SOURCE_DIR}/dynamics_model
+    ${PROJECT_SOURCE_DIR}/kinematics_model
+    ${PROJECT_SOURCE_DIR}/thirdParty/cxxopts
+
+    ${EIGEN3_INCLUDE_DIR}
 )
 
-foreach ( SRC_FILE ${EXE_LIST} )
+# ------------------------------------------------------------
+# Common libraries
+# ------------------------------------------------------------
+link_libraries(
+    ${PROJECT_SOURCE_DIR}/lib/kortex_api/libKortexApiCpp.a
+    pthread
+)
 
-  string(REPLACE ".cpp" "" TARGET_EXE_NAME ${SRC_FILE})
-  string(REPLACE "/" "_" TARGET_EXE_NAME ${TARGET_EXE_NAME})
-  
-  MESSAGE(${SRC_FILE})
-  MESSAGE("creating TARGET_EXE_NAME: '${TARGET_EXE_NAME}'")
+# ------------------------------------------------------------
+# Search executable source files
+# ------------------------------------------------------------
+file(GLOB_RECURSE EXE_LIST RELATIVE ${PROJECT_SOURCE_DIR}/src
+    "1*.cpp"
+    "2*.cpp"
+    "3*.cpp"
+    "4*.cpp"
+    "5*.cpp"
+)
 
-  add_executable(${TARGET_EXE_NAME} src/${SRC_FILE} 
-  ./include/kortex/utilities/utilities.cpp 
-  ./dynamics_model/dynamics_model.cpp 
-  ./kinematics_model/kinematics_model.cpp 
-  # ./controller/controller_2.cpp 
-  # ./controller/controller.cpp 
-  ./controller/BaseController.cpp
-  ./controller/ConfigLoader.cpp
-  ./controller/BaseParams.cpp
-  ./controller/ControlState.cpp
-  ./force_sensor/sriCommATParser.cpp
-  ./force_sensor/sriCommATParser.h
-  ./force_sensor/sriCommCircularBuffer.cpp
-  ./force_sensor/sriCommCircularBuffer.h
-  ./force_sensor/sriCommDefine.h
-  ./force_sensor/sriCommManager.cpp
-  ./force_sensor/sriCommManager.h
-  ./force_sensor/sriCommParser.cpp
-  ./force_sensor/sriCommParser.h
-  ./force_sensor/sriCommTCPClient.cpp
-  ./force_sensor/sriCommTCPClient.h
-  ./force_sensor/sriCommM8218Parser.cpp
-  ./force_sensor/sriCommM8218Parser.h
-  )
+# ------------------------------------------------------------
+# Source groups
+# ------------------------------------------------------------
 
+# Main torque/admittance control executable sources
+set(FULL_SOURCES
+    ./include/kortex/utilities/utilities.cpp
+    ./kinematics_model/kinematics_model.cpp
 
-  target_include_directories(${TARGET_EXE_NAME} PUBLIC ${Python3_INCLUDE_DIRS})
-  target_include_directories(${TARGET_EXE_NAME} PUBLIC ${Python3_NumPy_INCLUDE_DIRS})
+    ./controller/ConfigLoader.cpp
+    ./controller/BaseController.cpp
 
-  message(${Python3_INCLUDE_DIRS})
-  message(${Python3_LIBRARY_DIRS})
-  message(${Python3_NumPy_INCLUDE_DIRS})
+    ./robot_control/SafeAdmittanceExperiment.cpp
+    ./robot_control/KortexRobotInterface.cpp
 
-  target_link_libraries(${TARGET_EXE_NAME} PUBLIC
-  Python3::Python
-  Python3::Module
-  yaml-cpp
-  stdc++fs
-  )
+    ./force_sensor/sriCommATParser.cpp
+    ./force_sensor/sriCommCircularBuffer.cpp
+    ./force_sensor/sriCommManager.cpp
+    ./force_sensor/sriCommParser.cpp
+    ./force_sensor/sriCommTCPClient.cpp
+    ./force_sensor/sriCommM8218Parser.cpp
+)
 
-  if(Python3_NumPy_FOUND)
-    target_link_libraries(${TARGET_EXE_NAME} PUBLIC
-      Python3::NumPy
-      
+# Move angular / Kortex utility examples
+set(UTILITIES_ONLY_SOURCES
+    ./include/kortex/utilities/utilities.cpp
+)
+
+# Forward kinematics executable
+set(KINEMATICS_ONLY_SOURCES
+    ./kinematics_model/kinematics_model.cpp
+)
+
+# Force sensor test executable
+set(FORCE_SENSOR_ONLY_SOURCES
+    ./force_sensor/sriCommATParser.cpp
+    ./force_sensor/sriCommCircularBuffer.cpp
+    ./force_sensor/sriCommManager.cpp
+    ./force_sensor/sriCommParser.cpp
+    ./force_sensor/sriCommTCPClient.cpp
+    ./force_sensor/sriCommM8218Parser.cpp
+)
+
+# ------------------------------------------------------------
+# Generate executables
+# ------------------------------------------------------------
+foreach(SRC_FILE ${EXE_LIST})
+
+    string(REPLACE ".cpp" "" TARGET_EXE_NAME ${SRC_FILE})
+    string(REPLACE "/" "_" TARGET_EXE_NAME ${TARGET_EXE_NAME})
+
+    message("SRC_FILE: ${SRC_FILE}")
+    message("creating TARGET_EXE_NAME: ${TARGET_EXE_NAME}")
+
+    if(SRC_FILE MATCHES "^1.*\\.cpp$")
+        set(EXTRA_SOURCES ${FULL_SOURCES})
+
+    elseif(SRC_FILE MATCHES "^5.*\\.cpp$")
+        set(EXTRA_SOURCES ${FORCE_SENSOR_ONLY_SOURCES})
+
+    elseif(SRC_FILE MATCHES "^[23].*\\.cpp$")
+        set(EXTRA_SOURCES ${UTILITIES_ONLY_SOURCES})
+
+    elseif(SRC_FILE MATCHES "^4.*\\.cpp$")
+        set(EXTRA_SOURCES ${KINEMATICS_ONLY_SOURCES})
+
+    else()
+        set(EXTRA_SOURCES "")
+    endif()
+
+    add_executable(${TARGET_EXE_NAME}
+        src/${SRC_FILE}
+        ${EXTRA_SOURCES}
     )
-    message("have numpy")
-    message(${Python3_NumPy_FOUND})
-  else()
-    target_compile_definitions(${TARGET_EXE_NAME} INTERFACE WITHOUT_NUMPY)
-    message("no numpy")
-  endif()
-  
+
+    target_include_directories(${TARGET_EXE_NAME} PUBLIC
+        ${Python3_INCLUDE_DIRS}
+        ${Python3_NumPy_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(${TARGET_EXE_NAME} PUBLIC
+        yaml-cpp
+        stdc++fs
+    )
+
+    # Python is only needed by targets that use matplotlibcpp.
+    # 1: main controller with DataLogger plots
+    # 4: forward kinematics may plot trajectories
+    if(SRC_FILE MATCHES "^[14].*\\.cpp$")
+        target_link_libraries(${TARGET_EXE_NAME} PUBLIC
+            Python3::Python
+            Python3::Module
+        )
+
+        if(Python3_NumPy_FOUND)
+            target_link_libraries(${TARGET_EXE_NAME} PUBLIC Python3::NumPy)
+        else()
+            target_compile_definitions(${TARGET_EXE_NAME} PUBLIC WITHOUT_NUMPY)
+        endif()
+    endif()
+
+    # Pinocchio is needed by robot control / kinematics related targets.
+    if(SRC_FILE MATCHES "^[14].*\\.cpp$")
+        target_link_libraries(${TARGET_EXE_NAME} PUBLIC
+            pinocchio::pinocchio
+        )
+        target_compile_definitions(${TARGET_EXE_NAME} PUBLIC USE_PINOCCHIO)
+    endif()
+
 endforeach()

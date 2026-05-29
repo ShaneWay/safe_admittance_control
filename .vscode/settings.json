@@ -89,5 +89,8 @@
         "queue": "cpp",
         "stack": "cpp",
         "03-velocity_force_control": "cpp"
-    }
+    },
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_path": "/usr/bin/clang-format-18",
+    "editor.formatOnSave": true
 }

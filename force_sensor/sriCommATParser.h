@@ -6,24 +6,23 @@
 
 class CSRICommATParser : public CSRICommParser
 {
-public:
-	CSRICommATParser();
-	~CSRICommATParser();
+  public:
+    CSRICommATParser();
+    ~CSRICommATParser();
 
-	bool SetATCallbackFunction(SRICommATCallbackFunction atCallbackFunction);
+    bool SetATCallbackFunction(SRICommATCallbackFunction atCallbackFunction);
 
-	bool OnReceivedData(BYTE* data, int dataLen);
-	bool OnNetworkFailure(std::string infor);
+    bool OnReceivedData(BYTE* data, int dataLen);
+    bool OnNetworkFailure(std::string infor);
 
-private:
-	CSRICommCircularBuffer mCircularBuffer;
+  private:
+    CSRICommCircularBuffer mCircularBuffer;
 
-	SRICommATCallbackFunction mAtCallbackFunction;
+    SRICommATCallbackFunction mAtCallbackFunction;
 
-	bool ParseDataFromBuffer(int& delLen, std::string& ack);
-	int ParseGetHeadIndex(BYTE* data, int dataLen);
-	int ParseGetEndIndex(BYTE* data, int dataLen, int index);
-
+    bool ParseDataFromBuffer(int& delLen, std::string& ack);
+    int ParseGetHeadIndex(BYTE* data, int dataLen);
+    int ParseGetEndIndex(BYTE* data, int dataLen, int index);
 };
 
 #endif

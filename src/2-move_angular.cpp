@@ -1,14 +1,14 @@
 /*
-* KINOVA (R) KORTEX (TM)
-*
-* Copyright (c) 2018 Kinova inc. All rights reserved.
-*
-* This software may be modified and distributed
-* under the terms of the BSD 3-Clause license.
-*
-* Refer to the LICENSE file for details.
-*
-*/
+ * KINOVA (R) KORTEX (TM)
+ *
+ * Copyright (c) 2018 Kinova inc. All rights reserved.
+ *
+ * This software may be modified and distributed
+ * under the terms of the BSD 3-Clause license.
+ *
+ * Refer to the LICENSE file for details.
+ *
+ */
 
 #include <BaseClientRpc.h>
 #include <BaseCyclicClientRpc.h>
@@ -29,14 +29,12 @@ constexpr auto TIMEOUT_DURATION = std::chrono::seconds{20};
 // Create an event listener that will set the promise action event to the exit value
 // Will set promise to either END or ABORT
 // Use finish_promise.get_future.get() to wait and get the value
-std::function<void(k_api::Base::ActionNotification)> 
-    create_event_listener_by_promise(std::promise<k_api::Base::ActionEvent>& finish_promise)
+std::function<void(k_api::Base::ActionNotification)>
+create_event_listener_by_promise(std::promise<k_api::Base::ActionEvent>& finish_promise)
 {
-    return [&finish_promise] (k_api::Base::ActionNotification notification)
-    {
+    return [&finish_promise](k_api::Base::ActionNotification notification) {
         const auto action_event = notification.action_event();
-        switch(action_event)
-        {
+        switch (action_event) {
         case k_api::Base::ActionEvent::ACTION_END:
         case k_api::Base::ActionEvent::ACTION_ABORT:
             finish_promise.set_value(action_event);
@@ -50,14 +48,11 @@ std::function<void(k_api::Base::ActionNotification)>
 // Create an event listener that will set the sent reference to the exit value
 // Will set to either END or ABORT
 // Read the value of returnAction until it is set
-std::function<void(k_api::Base::ActionNotification)>
-    create_event_listener_by_ref(k_api::Base::ActionEvent& returnAction)
+std::function<void(k_api::Base::ActionNotification)> create_event_listener_by_ref(k_api::Base::ActionEvent& returnAction)
 {
-    return [&returnAction](k_api::Base::ActionNotification notification)
-    {
+    return [&returnAction](k_api::Base::ActionNotification notification) {
         const auto action_event = notification.action_event();
-        switch(action_event)
-        {
+        switch (action_event) {
         case k_api::Base::ActionEvent::ACTION_END:
         case k_api::Base::ActionEvent::ACTION_ABORT:
             returnAction = action_event;
@@ -72,7 +67,7 @@ bool example_move_to_home_position(k_api::Base::BaseClient* base)
 {
     // Make sure the arm is in Single Level Servoing before executing an Action
     auto servoingMode = k_api::Base::ServoingModeInformation();
-    
+
     servoingMode.set_servoing_mode(k_api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
     base->SetServoingMode(servoingMode);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -84,28 +79,21 @@ bool example_move_to_home_position(k_api::Base::BaseClient* base)
     auto action_list = base->ReadAllActions(action_type);
     auto action_handle = k_api::Base::ActionHandle();
     action_handle.set_identifier(0);
-    for (auto action : action_list.action_list()) 
-    {
-        if (action.name() == "Home") 
-        {
+    for (auto action : action_list.action_list()) {
+        if (action.name() == "Home") {
             action_handle = action.handle();
         }
     }
 
-    if (action_handle.identifier() == 0) 
-    {
+    if (action_handle.identifier() == 0) {
         std::cout << "Can't reach safe position, exiting" << std::endl;
         return false;
-    } 
-    else 
-    {
+    } else {
         // Connect to notification action topic
         std::promise<k_api::Base::ActionEvent> finish_promise;
         auto finish_future = finish_promise.get_future();
-        auto promise_notification_handle = base->OnNotificationActionTopic(
-            create_event_listener_by_promise(finish_promise),
-            k_api::Common::NotificationOptions()
-        );
+        auto promise_notification_handle =
+            base->OnNotificationActionTopic(create_event_listener_by_promise(finish_promise), k_api::Common::NotificationOptions());
 
         // Execute action
         base->ExecuteActionFromReference(action_handle);
@@ -114,21 +102,20 @@ bool example_move_to_home_position(k_api::Base::BaseClient* base)
         const auto status = finish_future.wait_for(TIMEOUT_DURATION);
         base->Unsubscribe(promise_notification_handle);
 
-        if(status != std::future_status::ready)
-        {
+        if (status != std::future_status::ready) {
             std::cout << "Timeout on action notification wait" << std::endl;
             return false;
         }
         const auto promise_event = finish_future.get();
 
         std::cout << "Move to Home completed" << std::endl;
-        std::cout << "Promise value : " << k_api::Base::ActionEvent_Name(promise_event) << std::endl; 
+        std::cout << "Promise value : " << k_api::Base::ActionEvent_Name(promise_event) << std::endl;
 
         return true;
     }
 }
 
-bool example_angular_action_movement(k_api::Base::BaseClient* base) 
+bool example_angular_action_movement(k_api::Base::BaseClient* base)
 {
     std::cout << "Starting angular action movement ..." << std::endl;
 
@@ -141,11 +128,10 @@ bool example_angular_action_movement(k_api::Base::BaseClient* base)
 
     auto actuator_count = base->GetActuatorCount();
 
-    float exp_start_angle[] = {307., 90., 90., 122, 0., 0., 0.};
+    float exp_start_angle[] = {197., 90., 90., 122, 0., 0., 0.};
 
     // Arm straight up
-    for (size_t i = 0; i < actuator_count.count(); ++i) 
-    {
+    for (size_t i = 0; i < actuator_count.count(); ++i) {
         auto joint_angle = joint_angles->add_joint_angles();
         joint_angle->set_joint_identifier(i);
         joint_angle->set_value(exp_start_angle[i]);
@@ -156,10 +142,8 @@ bool example_angular_action_movement(k_api::Base::BaseClient* base)
     // See cartesian examples for Reference alternative
     std::promise<k_api::Base::ActionEvent> finish_promise;
     auto finish_future = finish_promise.get_future();
-    auto promise_notification_handle = base->OnNotificationActionTopic(
-        create_event_listener_by_promise(finish_promise),
-        k_api::Common::NotificationOptions()
-    );
+    auto promise_notification_handle =
+        base->OnNotificationActionTopic(create_event_listener_by_promise(finish_promise), k_api::Common::NotificationOptions());
 
     std::cout << "Executing action" << std::endl;
     base->ExecuteAction(action);
@@ -172,26 +156,24 @@ bool example_angular_action_movement(k_api::Base::BaseClient* base)
     const auto status = finish_future.wait_for(TIMEOUT_DURATION);
     base->Unsubscribe(promise_notification_handle);
 
-    if(status != std::future_status::ready)
-    {
+    if (status != std::future_status::ready) {
         std::cout << "Timeout on action notification wait" << std::endl;
         return false;
     }
     const auto promise_event = finish_future.get();
 
     std::cout << "Angular movement completed" << std::endl;
-    std::cout << "Promise value : " << k_api::Base::ActionEvent_Name(promise_event) << std::endl; 
+    std::cout << "Promise value : " << k_api::Base::ActionEvent_Name(promise_event) << std::endl;
 
     return true;
 }
 
-
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     auto parsed_args = ParseExampleArguments(argc, argv);
 
     // Create API objects
-    auto error_callback = [](k_api::KError err){ cout << "_________ callback error _________" << err.toString(); };
+    auto error_callback = [](k_api::KError err) { cout << "_________ callback error _________" << err.toString(); };
     auto transport = new k_api::TransportClientTcp();
     auto router = new k_api::RouterClient(transport, error_callback);
     transport->connect(parsed_args.ip_address, PORT);
@@ -219,7 +201,7 @@ int main(int argc, char **argv)
 
     // You can also refer to the 110-Waypoints examples if you want to execute
     // a trajectory defined by a series of waypoints in joint space or in Cartesian space
-    
+
     // Close API session
     session_manager->CloseSession();
 
@@ -233,5 +215,5 @@ int main(int argc, char **argv)
     delete router;
     delete transport;
 
-    return success? 0: 1;
+    return success ? 0 : 1;
 }

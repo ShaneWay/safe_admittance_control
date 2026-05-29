@@ -1,505 +1,462 @@
 #include "sriCommTCPClient.h"
 
-
-
 CSRICommTCPClient::CSRICommTCPClient()
 {
-	mIpRemote = "";
-	mPortRemote = 0;
-	mIpLocal = "";
-	mPortLocal = 0;
+    mIpRemote = "";
+    mPortRemote = 0;
+    mIpLocal = "";
+    mPortLocal = 0;
 
-	mSocket = -1;
+    mSocket = -1;
 
-	mNetworkFailureCallback = NULL;
-	mLastError = "";
+    mIsStopThread = true;
+    mIsTreadStoped = true;
 
-#ifdef  IS_WINDOWS_OS
-	WSADATA wsaData;
-	WORD  wVersionRequested = MAKEWORD(2, 2);
-	//Specify the WinSock specification version as version 2.2
-	//Ö¸¶¨WinSock¹æ·¶°æ±¾Îª2.2°æ±¾
-	WSAStartup(wVersionRequested, &wsaData);
+    mNetworkFailureCallback = NULL;
+    mLastError = "";
+
+#ifdef IS_WINDOWS_OS
+    WSADATA wsaData;
+    WORD wVersionRequested = MAKEWORD(2, 2);
+    // Specify the WinSock specification version as version 2.2
+    // Ö¸ï¿½ï¿½WinSockï¿½æ·¶ï¿½æ±¾Îª2.2ï¿½æ±¾
+    WSAStartup(wVersionRequested, &wsaData);
 #endif
 }
 
-
 CSRICommTCPClient::~CSRICommTCPClient()
 {
-	mParserList.clear();	
+    CloseTCP();
+    mParserList.clear();
 }
 
-//Open TCP communication
-//´ò¿ªTCPÍ¨Ñ¶
+// Open TCP communication
+// ï¿½ï¿½TCPÍ¨Ñ¶
 bool CSRICommTCPClient::OpenTCP(std::string ipRemote, int portRemote, std::string ipLocal, int portLocal)
-{	
-	mIpRemote = ipRemote;
-	mPortRemote = portRemote;
-	mIpLocal = ipLocal;
-	mPortLocal = portLocal;
-	try
-	{
-		CloseTCP();
-		//
-		mSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (-1 == mSocket)
-		{
-			GetLastSocketError("socket()");
-			return false;
-		}
-		//
-		if (BindLocalIP() == false)
-		{
-			return false;
-		}
-		//
-		if (SetKeepAlive() == false)
-		{
-			return false;
-		}
-		memset(&mRemoteAddr, 0, sizeof(mRemoteAddr));
-		mRemoteAddr.sin_family = AF_INET;//socket  Configuration
-		mRemoteAddr.sin_port = htons(mPortRemote);// Remote Port
-		if (inet_pton(AF_INET, mIpRemote.data(), &mRemoteAddr.sin_addr) <= 0)//Ô¶³ÌIP
-		{
-			GetLastSocketError("inet_pton()");
-			return false;
-		}
-		
+{
+    mIpRemote = ipRemote;
+    mPortRemote = portRemote;
+    mIpLocal = ipLocal;
+    mPortLocal = portLocal;
+    try {
+        CloseTCP();
+        //
+        mSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (-1 == mSocket) {
+            GetLastSocketError("socket()");
+            return false;
+        }
+        //
+        if (BindLocalIP() == false) {
+            return false;
+        }
+        //
+        if (SetKeepAlive() == false) {
+            return false;
+        }
+        memset(&mRemoteAddr, 0, sizeof(mRemoteAddr));
+        mRemoteAddr.sin_family = AF_INET;                                     // socket  Configuration
+        mRemoteAddr.sin_port = htons(mPortRemote);                            // Remote Port
+        if (inet_pton(AF_INET, mIpRemote.data(), &mRemoteAddr.sin_addr) <= 0) // Ô¶ï¿½ï¿½IP
+        {
+            GetLastSocketError("inet_pton()");
+            return false;
+        }
 
-
-	}
-	catch(std::exception ex)
-	{
-		mLastError = ex.what();
-		return false;
-	}
-	return true;
+    } catch (std::exception ex) {
+        mLastError = ex.what();
+        return false;
+    }
+    return true;
 }
 
 bool CSRICommTCPClient::CloseTCP()
 {
-	CloseThread();
+    CloseThread();
 
-	if (mSocket != -1)
-	{
-#ifdef  IS_WINDOWS_OS
-		closesocket(mSocket);
+    if (mSocket != -1) {
+#ifdef IS_WINDOWS_OS
+        closesocket(mSocket);
 #else
-		close(mSocket);
+        close(mSocket);
 #endif
-		mSocket = -1;
-	}
-	
-	//
-	return true;
-}
+        mSocket = -1;
+    }
 
-//TCP connect
+    return true;
+}
+// TCP connect
 bool CSRICommTCPClient::Connect()
 {
-	if (ConnectTCP() == false)
-	{
-		return false;
-	}
-	//
-	if (OpenThread() == false)
-	{
-		GetLastSocketError("OpenThread()");
-		return false;
-	}
+    if (ConnectTCP() == false) {
+        return false;
+    }
+    //
+    if (OpenThread() == false) {
+        GetLastSocketError("OpenThread()");
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
 bool CSRICommTCPClient::Disconnect()
 {
-	//shutdown(mSocket, 2);
-	return true;
+    // shutdown(mSocket, 2);
+    return true;
 }
 
 bool CSRICommTCPClient::ReConnect()
 {
-	Disconnect();
-	return ConnectTCP();
+    Disconnect();
+    return ConnectTCP();
 }
 
 bool CSRICommTCPClient::ConnectTCP()
 {
-	Disconnect();
-#ifdef  IS_WINDOWS_OS
-	unsigned long blockFlag = 1;
-	//// Control the mode of the socket, FIONBIO: set blocking mode, non-blocking mode (blockFlag = 1)
-	// ¿ØÖÆsocketµÄÄ£Ê½£¬FIONBIO£ºÉèÖÃ×èÈûÄ£Ê½£¬·Ç×èÈûÄ£Ê½£¨blockFlag = 1£©
-	if (ioctlsocket(mSocket, FIONBIO, (unsigned long*)&blockFlag) < 0)
-	{
-		GetLastSocketError("ioctlsocket() FIONBIO");
-		return false;
-	}
+    Disconnect();
+#ifdef IS_WINDOWS_OS
+    unsigned long blockFlag = 1;
+    //// Control the mode of the socket, FIONBIO: set blocking mode, non-blocking mode (blockFlag = 1)
+    // ï¿½ï¿½ï¿½ï¿½socketï¿½ï¿½Ä£Ê½ï¿½ï¿½FIONBIOï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½blockFlag = 1ï¿½ï¿½
+    if (ioctlsocket(mSocket, FIONBIO, (unsigned long*)&blockFlag) < 0) {
+        GetLastSocketError("ioctlsocket() FIONBIO");
+        return false;
+    }
 #else
-	int blockFlag = 0;
-	if (ioctl(mSocket, FIONBIO, (char*)(&blockFlag)) < 0)
-	{
-		GetLastSocketError("ioctlsocket() FIONBIO");
-		return false;
-	}
+    int blockFlag = 0;
+    if (ioctl(mSocket, FIONBIO, (char*)(&blockFlag)) < 0) {
+        GetLastSocketError("ioctlsocket() FIONBIO");
+        return false;
+    }
 #endif
-	//
-	bool isConnected = false;
-	if (connect(mSocket, (struct sockaddr*) &mRemoteAddr, sizeof(mRemoteAddr)) == -1)
-	{
-		struct timeval timeout = { 0 };
-		timeout.tv_sec = 1;
-		timeout.tv_usec = 0;
+    //
+    bool isConnected = false;
+    if (connect(mSocket, (struct sockaddr*)&mRemoteAddr, sizeof(mRemoteAddr)) == -1) {
+        struct timeval timeout = {0};
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
 
-		fd_set fdwrite;
-		FD_ZERO(&fdwrite);
-		FD_SET(mSocket, &fdwrite);
+        fd_set fdwrite;
+        FD_ZERO(&fdwrite);
+        FD_SET(mSocket, &fdwrite);
 
-		int error = -1;
-		int len = sizeof(int);
+        int error = -1;
+        int len = sizeof(int);
 
-		//Monitor socket connection in non-blocking mode
-		//·Ç×èÈû·½Ê½¼àÊÓsocketÁ¬½Ó
-		if (select(mSocket, 0, &fdwrite, 0, &timeout) > 0)
-		{
-			getsockopt(mSocket, SOL_SOCKET, SO_ERROR, (char*)&error, (socklen_t*)&len);
-			if (error != 0)
-			{
-				isConnected = false;
-			}
-			isConnected = true;
-		}
-		else
-		{
-			isConnected = false;
-		}
-	}
-	else
-	{
-		isConnected = true;
-	}
-	//
-#ifdef  IS_WINDOWS_OS
-	blockFlag = 1;
-	//Set the control socket to non - blocking mode
-	//ÉèÖÃ¿ØÖÆÌ×½Ó¿ÚÎª·Ç×èÈûÄ£Ê½
-	if (ioctlsocket(mSocket, FIONBIO, (unsigned long*)&blockFlag) < 0)
-	{
-		GetLastSocketError("ioctlsocket() FIONBIO");
-		return false;
-	}
+        // Monitor socket connection in non-blocking mode
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½socketï¿½ï¿½ï¿½ï¿½
+        if (select(mSocket, 0, &fdwrite, 0, &timeout) > 0) {
+            getsockopt(mSocket, SOL_SOCKET, SO_ERROR, (char*)&error, (socklen_t*)&len);
+            if (error != 0) {
+                isConnected = false;
+            }
+            isConnected = true;
+        } else {
+            isConnected = false;
+        }
+    } else {
+        isConnected = true;
+    }
+    //
+#ifdef IS_WINDOWS_OS
+    blockFlag = 1;
+    // Set the control socket to non - blocking mode
+    // ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½×½Ó¿ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½
+    if (ioctlsocket(mSocket, FIONBIO, (unsigned long*)&blockFlag) < 0) {
+        GetLastSocketError("ioctlsocket() FIONBIO");
+        return false;
+    }
 #else
-	blockFlag = 0;
-	if (ioctl(mSocket, FIONBIO,  (char*)(&blockFlag)) < 0)
-	{
-		GetLastSocketError("ioctlsocket() FIONBIO");
-		return false;
-	}
+    blockFlag = 0;
+    if (ioctl(mSocket, FIONBIO, (char*)(&blockFlag)) < 0) {
+        GetLastSocketError("ioctlsocket() FIONBIO");
+        return false;
+    }
 #endif
-	//
-	if (isConnected == false)
-	{
-		GetLastSocketError("ConnectTCP() isConnected == false");
-		return false;
-	}
-	return true;
+    //
+    if (isConnected == false) {
+        GetLastSocketError("ConnectTCP() isConnected == false");
+        return false;
+    }
+    return true;
 }
 
-//Bind the local server IP address and port number
-//°ó¶¨±¾µØ·þÎñÆ÷IPµØÖ·ºÍ¶Ë¿ÚºÅ
+// Bind the local server IP address and port number
+// ï¿½ó¶¨±ï¿½ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½IPï¿½ï¿½Ö·ï¿½Í¶Ë¿Úºï¿½
 bool CSRICommTCPClient::BindLocalIP()
 {
-	if (("" != mIpLocal) && (0 != mPortLocal))
-	{
-		memset(&mLocalAddr, 0, sizeof(mLocalAddr));
-		mLocalAddr.sin_family = AF_INET;
-		mLocalAddr.sin_port = htons(mPortLocal);
-		if (inet_pton(AF_INET, mIpLocal.data(), &mLocalAddr.sin_addr) <= 0)
-		{
-			GetLastSocketError("inet_pton()");
-			return false;
-		}
-		if (bind(mSocket, (struct sockaddr*)&mLocalAddr, sizeof(mLocalAddr)) == -1)
-		{
-			GetLastSocketError("bind()");
-			return false;
-		}
-	}
-	return true;
+    if (("" != mIpLocal) && (0 != mPortLocal)) {
+        memset(&mLocalAddr, 0, sizeof(mLocalAddr));
+        mLocalAddr.sin_family = AF_INET;
+        mLocalAddr.sin_port = htons(mPortLocal);
+        if (inet_pton(AF_INET, mIpLocal.data(), &mLocalAddr.sin_addr) <= 0) {
+            GetLastSocketError("inet_pton()");
+            return false;
+        }
+        if (bind(mSocket, (struct sockaddr*)&mLocalAddr, sizeof(mLocalAddr)) == -1) {
+            GetLastSocketError("bind()");
+            return false;
+        }
+    }
+    return true;
 }
 
-//ÅäÖÃKeepAlive 
+// ï¿½ï¿½ï¿½ï¿½KeepAlive
 bool CSRICommTCPClient::SetKeepAlive()
 {
-	//
-	int keepAlive = 1;		//
-	int keepIdle = 1;		// 
-	int keepInterval = 10;	//
-	int keepCount = 3;		//			
-	int netTimeout = 10000;	//
-#ifdef  IS_WINDOWS_OS
-	if (setsockopt(mSocket, SOL_SOCKET, SO_KEEPALIVE, (const char *)&keepAlive, sizeof(keepAlive)) < 0)//¿ªÆôµ÷ÕûkeepaliveµÄÑ¡Ïî
-	{
-		GetLastSocketError("setsockopt() SO_KEEPALIVE");
-		return false;
-	}
+    //
+    int keepAlive = 1;      //
+    int keepIdle = 1;       //
+    int keepInterval = 10;  //
+    int keepCount = 3;      //
+    int netTimeout = 10000; //
+#ifdef IS_WINDOWS_OS
+    if (setsockopt(mSocket, SOL_SOCKET, SO_KEEPALIVE, (const char*)&keepAlive, sizeof(keepAlive)) < 0) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½keepaliveï¿½ï¿½Ñ¡ï¿½ï¿½
+    {
+        GetLastSocketError("setsockopt() SO_KEEPALIVE");
+        return false;
+    }
 
-	if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPIDLE, (const char *)&keepIdle, sizeof(keepIdle)) < 0) //¾àÀëÉÏ´Î·¢ËÍÊý¾Ý¶à³¤Ê±¼äºó¿ªÊ¼Ì½²â
-	{
-		GetLastSocketError("setsockopt() TCP_KEEPIDLE");
-		return false;
-	}
+    if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPIDLE, (const char*)&keepIdle, sizeof(keepIdle)) <
+        0) // ï¿½ï¿½ï¿½ï¿½ï¿½Ï´Î·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¶à³¤Ê±ï¿½ï¿½ï¿½Ê¼Ì½ï¿½ï¿½
+    {
+        GetLastSocketError("setsockopt() TCP_KEEPIDLE");
+        return false;
+    }
 
-	if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPINTVL, (const char *)&keepInterval, sizeof(keepInterval)) < 0)//ÎÞÊý¾Ý½»»¥ÏÂ Ã¿¸ô¶à³¤Ê±¼äÌ½²âÒ»´Î
-	{
-		GetLastSocketError("setsockopt() TCP_KEEPINTVL");
-		return false;
-	}
-	if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPCNT, (const char *)&keepCount, sizeof(keepCount)) < 0)//¹Ø±ÕÒ»¸ö·Ç»îÔ¾Á¬½ÓÖ®Ç°µÄ×î´óÖØÊÔ´ÎÊý
-	{
-		GetLastSocketError("setsockopt() TCP_KEEPCNT");
-		return false;
-	}
-									
-	if (setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&netTimeout, sizeof(int)) < 0)//ÉèÖÃ·¢ËÍ³¬Ê±Ê±¼ä
-	{
-		GetLastSocketError("setsockopt() SO_SNDTIMEO");
-	}
-	return true;
+    if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPINTVL, (const char*)&keepInterval, sizeof(keepInterval)) <
+        0) // ï¿½ï¿½ï¿½ï¿½ï¿½Ý½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã¿ï¿½ï¿½ï¿½à³¤Ê±ï¿½ï¿½Ì½ï¿½ï¿½Ò»ï¿½ï¿½
+    {
+        GetLastSocketError("setsockopt() TCP_KEEPINTVL");
+        return false;
+    }
+    if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPCNT, (const char*)&keepCount, sizeof(keepCount)) < 0) // ï¿½Ø±ï¿½Ò»ï¿½ï¿½ï¿½Ç»ï¿½Ô¾ï¿½ï¿½ï¿½ï¿½Ö®Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½
+    {
+        GetLastSocketError("setsockopt() TCP_KEEPCNT");
+        return false;
+    }
+
+    if (setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&netTimeout, sizeof(int)) < 0) // ï¿½ï¿½ï¿½Ã·ï¿½ï¿½Í³ï¿½Ê±Ê±ï¿½ï¿½
+    {
+        GetLastSocketError("setsockopt() SO_SNDTIMEO");
+    }
+    return true;
 #else
-	if (setsockopt(mSocket, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive)) < 0)
-	{
-		GetLastSocketError("setsockopt() SO_KEEPALIVE");
-		return false;
-	}
+    if (setsockopt(mSocket, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepAlive, sizeof(keepAlive)) < 0) {
+        GetLastSocketError("setsockopt() SO_KEEPALIVE");
+        return false;
+    }
 
-	if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&keepIdle, sizeof(keepIdle)) < 0)
-	{
-		GetLastSocketError("setsockopt() TCP_KEEPIDLE");
-		return false;
-	}
+    if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle)) < 0) {
+        GetLastSocketError("setsockopt() TCP_KEEPIDLE");
+        return false;
+    }
 
-	if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval)) < 0) 
-	{
-		GetLastSocketError("setsockopt() TCP_KEEPINTVL");
-		return false;
-	}
-	if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount)) < 0)
-	{
-		GetLastSocketError("setsockopt() TCP_KEEPCNT");
-		return false;
-	}
-	struct timeval timeout = { 0,0 };//s
-	timeout.tv_sec = netTimeout;
-	if (setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, (void*)&timeout, sizeof(timeout)) < 0)
-	{
-		GetLastSocketError("setsockopt() SO_SNDTIMEO");
-	}	
-	return true;
+    if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval)) < 0) {
+        GetLastSocketError("setsockopt() TCP_KEEPINTVL");
+        return false;
+    }
+    if (setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount)) < 0) {
+        GetLastSocketError("setsockopt() TCP_KEEPCNT");
+        return false;
+    }
+    struct timeval timeout = {0, 0}; // s
+    timeout.tv_sec = netTimeout;
+    if (setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, (void*)&timeout, sizeof(timeout)) < 0) {
+        GetLastSocketError("setsockopt() SO_SNDTIMEO");
+    }
+    return true;
 #endif
 }
 
-//Create TCP client receiver thread
-//´´½¨TCPÊý¾Ý½ÓÊÕÏß³Ì
+// Create TCP client receiver thread
 bool CSRICommTCPClient::OpenThread()
 {
-	mThread = std::thread(&CSRICommTCPClient::TCPClientReceiverThread, this, 0);
-	return true;
+    if (mThread.joinable()) {
+        CloseThread();
+    }
+
+    mIsStopThread = false;
+    mIsTreadStoped = false;
+
+    mThread = std::thread(&CSRICommTCPClient::TCPClientReceiverThread, this, 0);
+
+    return true;
 }
 bool CSRICommTCPClient::CloseThread()
 {
-	mIsStopThread = true;
-	std::clock_t start = clock();
-	while (true)
-	{
-		if (mIsTreadStoped == true)
-		{
-			break;
-		}
-		std::clock_t end = clock();
-		double span = end - start;
-		if (span >= 1)//1s
-		{
-			return false;
-		}
-	}
-	return true;
+    mIsStopThread = true;
+
+    // å…³é—­ socketï¼Œè®© recv() å°½å¿«è¿”å›ž
+    if (mSocket != -1) {
+#ifdef IS_WINDOWS_OS
+        shutdown(mSocket, SD_BOTH);
+#else
+        shutdown(mSocket, SHUT_RDWR);
+#endif
+    }
+
+    if (mThread.joinable()) {
+        mThread.join();
+    }
+
+    mIsTreadStoped = true;
+
+    return true;
 }
 
-//TCP client receiver thread fuction
-//TCPÊý¾Ý½ÓÊÕÏß³Ìº¯Êý
+// TCP client receiver thread fuction
+// TCPï¿½ï¿½ï¿½Ý½ï¿½ï¿½ï¿½ï¿½ß³Ìºï¿½ï¿½ï¿½
 void CSRICommTCPClient::TCPClientReceiverThread(int code)
 {
-	mIsStopThread = false;
-	mIsTreadStoped = false;
+    mIsStopThread = false;
+    mIsTreadStoped = false;
 
-	int dataBufferLen = 8192;//8K
-	BYTE* dataBuffer = new BYTE[dataBufferLen];
-	memset(dataBuffer, 0, dataBufferLen);
-	int recvDataLen = 0;
+    int dataBufferLen = 8192; // 8K
+    BYTE* dataBuffer = new BYTE[dataBufferLen];
+    memset(dataBuffer, 0, dataBufferLen);
+    int recvDataLen = 0;
 
-	fd_set readfds;
-	fd_set writefds;
-	fd_set exceptfds;
-	memset(&readfds, 0, sizeof(fd_set));
-	memset(&writefds, 0, sizeof(fd_set));
-	memset(&exceptfds, 0, sizeof(fd_set));
-	timeval timeout;
-	memset(&timeout, 0, sizeof(timeval));
-	timeout.tv_sec = 1;
+    fd_set readfds;
+    fd_set writefds;
+    fd_set exceptfds;
+    memset(&readfds, 0, sizeof(fd_set));
+    memset(&writefds, 0, sizeof(fd_set));
+    memset(&exceptfds, 0, sizeof(fd_set));
+    timeval timeout;
+    memset(&timeout, 0, sizeof(timeval));
+    timeout.tv_sec = 1;
 
-	FD_SET(mSocket, &readfds);
-	FD_SET(mSocket, &writefds);
-	FD_SET(mSocket, &exceptfds);
-	while (true)
-	{
-		if (mIsStopThread == true)
-		{
-			break;
-		}
+    FD_SET(mSocket, &readfds);
+    FD_SET(mSocket, &writefds);
+    FD_SET(mSocket, &exceptfds);
+    while (true) {
+        if (mIsStopThread == true) {
+            break;
+        }
 
-		recvDataLen = recv(mSocket, (char*)dataBuffer, dataBufferLen, 0);
-		if ((recvDataLen > 0) && (recvDataLen <= dataBufferLen))//
-		{
-			//
-			OnReceivedData(dataBuffer, recvDataLen);
-			memset(dataBuffer, 0, recvDataLen);
-		}
-		else if (recvDataLen == 0)
-		{
-			continue;
-		}
-		else
-		{
-			if (CheckTimeoutError() == true)
-			{
-				GetLastSocketError("recv() Timeout"); 
-				break;
-			}
-			
-		}
-
-	}
-	delete dataBuffer;
-	mIsTreadStoped = true;
+        recvDataLen = recv(mSocket, (char*)dataBuffer, dataBufferLen, 0);
+        if ((recvDataLen > 0) && (recvDataLen <= dataBufferLen)) //
+        {
+            //
+            OnReceivedData(dataBuffer, recvDataLen);
+            memset(dataBuffer, 0, recvDataLen);
+        } else if (recvDataLen == 0) {
+            continue;
+        } else {
+            if (CheckTimeoutError() == true) {
+                GetLastSocketError("recv() Timeout");
+                break;
+            }
+        }
+    }
+    delete[] dataBuffer;
+    mIsTreadStoped = true;
 }
-//Process the received data
-//´¦Àí½ÓÊÕµ½µÄÊý¾Ý
+// Process the received data
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 bool CSRICommTCPClient::OnReceivedData(BYTE* data, int dataLen)
 {
-	for (size_t i = 0; i < mParserList.size(); ++i)
-	{
-		CSRICommParser* parser = mParserList[i];
-		if (parser != NULL)
-		{
-			parser->OnReceivedData(data, dataLen);
-		}
-	}
-	return true;
+    for (size_t i = 0; i < mParserList.size(); ++i) {
+        CSRICommParser* parser = mParserList[i];
+        if (parser != NULL) {
+            parser->OnReceivedData(data, dataLen);
+        }
+    }
+    return true;
 }
-//Check if the connection timed out
-//¼ì²âÁ¬½Ó³¬Ê±
+// Check if the connection timed out
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½Ê±
 bool CSRICommTCPClient::CheckTimeoutError()
 {
-#ifdef  IS_WINDOWS_OS
-	int errorCode = WSAGetLastError();
-	if (WSAETIMEDOUT == errorCode)//
-	{
-		return true;
-	}
+#ifdef IS_WINDOWS_OS
+    int errorCode = WSAGetLastError();
+    if (WSAETIMEDOUT == errorCode) //
+    {
+        return true;
+    }
 #else
-	//#define ETIMEDOUT       110     /* Connection timed out */  
-	if (ETIMEDOUT == errno)
-	{
-		return true;
-	}
+    // #define ETIMEDOUT       110     /* Connection timed out */
+    if (ETIMEDOUT == errno) {
+        return true;
+    }
 #endif
-	return false;
+    return false;
 }
-//Network Failure
-//ÍøÂç¹ÊÕÏ´¦Àí
+// Network Failure
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½
 bool CSRICommTCPClient::OnNetworkFailure()
 {
-	for (size_t i = 0; i < mParserList.size(); ++i)
-	{
-		CSRICommParser* parser = mParserList[i];
-		if (parser != NULL)
-		{
-			parser->OnNetworkFailure(mLastError);
-		}
-	}
-	if (mNetworkFailureCallback != NULL)
-	{
-		mNetworkFailureCallback(mLastError);
-	}
-	return true;
+    for (size_t i = 0; i < mParserList.size(); ++i) {
+        CSRICommParser* parser = mParserList[i];
+        if (parser != NULL) {
+            parser->OnNetworkFailure(mLastError);
+        }
+    }
+    if (mNetworkFailureCallback != NULL) {
+        mNetworkFailureCallback(mLastError);
+    }
+    return true;
 }
 
-
-//TCP send string
-//TCP·¢ËÍ×Ö·û´®
+// TCP send string
+// TCPï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
 bool CSRICommTCPClient::OnSendData(BYTE* data, int dataLen)
 {
-	if (data == NULL)
-	{
-		return false;
-	}
-	if (dataLen <= 0)
-	{
-		return false;
-	}
-	try
-	{
-		int sendRet = send(mSocket, (char*)data, dataLen, 0);
-		if (sendRet != dataLen)
-		{
-			GetLastSocketError("send()");			
-			return false;
-		}
-	}
-	catch (std::exception ex)
-	{
-		mLastError = ex.what();
-		OnNetworkFailure();
-		return false;
-	}
-	return true;
+    if (data == NULL) {
+        return false;
+    }
+    if (dataLen <= 0) {
+        return false;
+    }
+    try {
+        int sendRet = send(mSocket, (char*)data, dataLen, 0);
+        if (sendRet != dataLen) {
+            GetLastSocketError("send()");
+            return false;
+        }
+    } catch (std::exception ex) {
+        mLastError = ex.what();
+        OnNetworkFailure();
+        return false;
+    }
+    return true;
 }
-//Add parser
-//Ìí¼Ó½âÎöÆ÷
+// Add parser
+// ï¿½ï¿½ï¿½Ó½ï¿½ï¿½ï¿½ï¿½ï¿½
 bool CSRICommTCPClient::AddCommParser(CSRICommParser* parser)
 {
-	mParserList.push_back(parser);
-	return true;
+    mParserList.push_back(parser);
+    return true;
 }
 
 bool CSRICommTCPClient::SetNetworkFailureCallbackFunction(SRICommNetworkFailureCallbackFunction networkFailureCallback)
 {
-	mNetworkFailureCallback = networkFailureCallback;
-	return true;
+    mNetworkFailureCallback = networkFailureCallback;
+    return true;
 }
 
 std::string CSRICommTCPClient::GetLastError()
 {
-	return mLastError;
+    return mLastError;
 }
 
-//»ñÈ¡´íÎóÐÅÏ¢
+// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 void CSRICommTCPClient::GetLastSocketError(std::string functionName = "")
 {
-	mLastError = "";
-	#ifdef  IS_WINDOWS_OS
-		char buffer[2048];
-		memset(buffer, 0, 2048);
-		sprintf(buffer, "Socket %s error: %d\n", functionName.data(), WSAGetLastError());
-		mLastError = buffer;
-	#else
-		char buffer[2048];
-		memset(buffer, 0, 2048);
-		sprintf(buffer, "Socket %s error: %s(errno: %d)\n", functionName.data(), strerror(errno), errno);
-		mLastError = buffer;
-	#endif
+    mLastError = "";
+#ifdef IS_WINDOWS_OS
+    char buffer[2048];
+    memset(buffer, 0, 2048);
+    sprintf(buffer, "Socket %s error: %d\n", functionName.data(), WSAGetLastError());
+    mLastError = buffer;
+#else
+    char buffer[2048];
+    memset(buffer, 0, 2048);
+    sprintf(buffer, "Socket %s error: %s(errno: %d)\n", functionName.data(), strerror(errno), errno);
+    mLastError = buffer;
+#endif
 
-	OnNetworkFailure();
+    OnNetworkFailure();
 }
